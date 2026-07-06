@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const where: any = { channelId };
   if (isShort === "true") where.isShort = true;
   if (isShort === "false") where.isShort = false;
-  if (search) where.title = { contains: search };
+  if (search) where.title = { contains: search, mode: "insensitive" };
 
   const orderBy: any =
     sortBy === "views" ? { views: "desc" }
