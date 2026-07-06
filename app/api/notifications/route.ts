@@ -73,8 +73,8 @@ export async function PATCH(req: NextRequest) {
         userId: user.id,
         read: false,
         OR: [
-          { type: "FEEDBACK", comment: commentWhere },
-          ...(body.videoId === undefined ? [{ type: "NEW_CHANNEL", channelId: body.channelId }] : []),
+          { type: "FEEDBACK" as any, comment: commentWhere },
+          ...(body.videoId === undefined ? [{ type: "NEW_CHANNEL" as any, channelId: body.channelId }] : []),
         ],
       },
       data: { read: true },
