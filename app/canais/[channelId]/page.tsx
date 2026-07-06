@@ -192,6 +192,7 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
   if (status !== "authenticated" || !channel) return null;
 
   const isMentorOrAdmin = role === "ADMIN" || role === "MENTOR";
+  const fromVisaoGeral = searchParams.get("from") === "visao-geral";
   const backHref = isMentorOrAdmin ? `/admin/alunos/${channel.studentId}` : "/dashboard";
 
   return (
@@ -202,6 +203,17 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
         {/* Channel header */}
         <div className="border-b border-white/5 bg-[#09090b] px-6 py-4 flex-shrink-0">
           <div className="flex items-center gap-4">
+            {fromVisaoGeral ? (
+              <button
+                onClick={() => router.back()}
+                className="text-gray-600 hover:text-white transition-colors flex-shrink-0"
+                title="Voltar para Visão Geral"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+              </button>
+            ) : (
             <a
               href={backHref}
               className="text-gray-600 hover:text-white transition-colors flex-shrink-0"
@@ -211,6 +223,7 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
             </a>
+            )}
 
             <a
               href={`https://youtube.com/${channel.handle ?? `channel/${channel.youtubeChannelId}`}`}

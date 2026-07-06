@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import ChannelCard from "@/components/ChannelCard";
 
@@ -22,6 +22,8 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
   const { id } = use(params);
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromVisaoGeral = searchParams.get("from") === "visao-geral";
   const [channels, setChannels] = useState<Channel[]>([]);
   const [studentName, setStudentName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,17 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
+            {fromVisaoGeral ? (
+              <button
+                onClick={() => router.back()}
+                className="text-gray-500 hover:text-white transition-colors flex-shrink-0"
+                title="Voltar para Visão Geral"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+              </button>
+            ) : (
             <a
               href="/admin"
               className="text-gray-500 hover:text-white transition-colors flex-shrink-0"
@@ -82,6 +95,7 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
             </a>
+            )}
             <div>
               <h1 className="text-xl font-semibold text-white">{studentName || "Aluno"}</h1>
               <p className="text-sm text-gray-500">

@@ -164,7 +164,7 @@ function OverviewVideoCard({ video, now }: { video: VideoItem; now: number }) {
     <>
     <div className="group bg-[#13131e] border border-white/5 hover:border-white/10 rounded-xl overflow-hidden transition-all duration-200 flex flex-col">
       {/* Thumbnail */}
-      <Link href={`/canais/${video.channel.id}`} className="relative aspect-video bg-[#0d0d14] overflow-hidden flex-shrink-0 block">
+      <Link href={`/canais/${video.channel.id}?from=visao-geral`} className="relative aspect-video bg-[#0d0d14] overflow-hidden flex-shrink-0 block">
         {video.thumbnailUrl ? (
           <img src={video.thumbnailUrl} alt={video.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -177,7 +177,7 @@ function OverviewVideoCard({ video, now }: { video: VideoItem; now: number }) {
       </Link>
 
       <div className="p-3 flex flex-col gap-2 flex-1">
-        <Link href={`/canais/${video.channel.id}`}
+        <Link href={`/canais/${video.channel.id}?from=visao-geral`}
           className="text-sm text-gray-200 line-clamp-2 leading-snug hover:text-white transition-colors flex-1">
           {video.title}
         </Link>
@@ -193,7 +193,7 @@ function OverviewVideoCard({ video, now }: { video: VideoItem; now: number }) {
           <span className="text-xs text-gray-400 truncate">
             {channelName}
             <span className="text-gray-600 mx-1">-</span>
-            <Link href={`/admin/alunos/${studentId}`}
+            <Link href={`/admin/alunos/${studentId}?from=visao-geral`}
               onClick={(e) => e.stopPropagation()}
               className="text-violet-400 hover:text-violet-300 transition-colors font-medium">
               {studentName}
