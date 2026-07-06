@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
 
   const channel = await db.channel.findUnique({ where: { id: channelId }, select: { studentId: true } });
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (user.role !== "ADMIN" && channel.studentId !== user.id) {
+  const isMentorOrAdmin = user.role === "ADMIN" || user.role === "MENTOR";
+  if (!isMentorOrAdmin && channel.studentId !== user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -53,8 +54,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Campos obrigatórios ausentes" }, { status: 400 });
   }
 
-  // only ADMINs (mentors) can leave feedback
-  if (user.role !== "ADMIN") {
+  // only ADMIN and MENTOR can leave feedback
+  if (user.role !== "ADMIN" && user.role !== "MENTOR") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

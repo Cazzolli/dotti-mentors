@@ -11,13 +11,15 @@ export async function GET(req: NextRequest) {
   const studentId = searchParams.get("studentId");
   const user = session.user as any;
 
-  // students must not be able to request data for other students
-  if (user.role !== "ADMIN" && studentId && studentId !== user.id) {
+  const isMentorOrAdmin = user.role === "ADMIN" || user.role === "MENTOR";
+
+  // students must not request data for other students
+  if (!isMentorOrAdmin && studentId && studentId !== user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const where =
-    user.role === "ADMIN"
+    isMentorOrAdmin
       ? studentId ? { studentId } : {}
       : { studentId: user.id };
 

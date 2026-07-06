@@ -27,7 +27,7 @@ export default function MentorLoginPage() {
     const session = await sessionRes.json();
     const role = session?.user?.role;
 
-    if (role !== "ADMIN") {
+    if (role !== "ADMIN" && role !== "MENTOR") {
       setError("Acesso restrito a mentores.");
       await fetch("/api/auth/signout", { method: "POST" });
       setLoading(false);

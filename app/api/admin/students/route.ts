@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+function isMentorOrAdmin(role: string) {
+  return role === "ADMIN" || role === "MENTOR";
+}
+
 export async function GET() {
   const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  if (!session || !isMentorOrAdmin(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

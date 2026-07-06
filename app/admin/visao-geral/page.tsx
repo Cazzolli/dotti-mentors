@@ -320,7 +320,7 @@ export default function AdminPage() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar role="ADMIN" userName={session?.user?.name ?? ""} />
+      <Sidebar role={((session?.user as any)?.role ?? "STUDENT") as "ADMIN" | "MENTOR" | "STUDENT"} userName={session?.user?.name ?? ""} />
 
       <main className="flex-1 overflow-y-auto">
         {/* Header */}

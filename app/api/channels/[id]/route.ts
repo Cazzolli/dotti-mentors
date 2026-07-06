@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+function isMentorOrAdmin(role: string) {
+  return role === "ADMIN" || role === "MENTOR";
+}
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const user = session.user as any;
-  if (user.role !== "ADMIN" && channel.studentId !== user.id) {
+  if (!isMentorOrAdmin(user.role) && channel.studentId !== user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -33,8 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const user = session.user as any;
-  // only the student owner can edit the idea
-  if (user.role !== "ADMIN" && channel.studentId !== user.id) {
+  if (!isMentorOrAdmin(user.role) && channel.studentId !== user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -56,8 +59,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const user = session.user as any;
-  if (user.role !== "ADMIN" && channel.studentId !== user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  // only ADMIN can delete channels
+  if (user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   await db.channel.delete({ where: { id } });

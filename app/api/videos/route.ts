@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const user = session.user as any;
-  if (user.role !== "ADMIN" && channel.studentId !== user.id) {
+  if (user.role !== "ADMIN" && user.role !== "MENTOR" && channel.studentId !== user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

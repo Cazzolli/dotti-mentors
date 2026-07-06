@@ -13,13 +13,14 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Admin-only routes — students get booted to dashboard
-  if (pathname.startsWith("/admin") && role !== "ADMIN") {
+  // Admin/mentor routes — students get booted to dashboard
+  const isMentorOrAdmin = role === "ADMIN" || role === "MENTOR";
+  if (pathname.startsWith("/admin") && !isMentorOrAdmin) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Mentor login page — if already admin, go to admin panel
-  if (pathname === "/mentor" && role === "ADMIN") {
+  // Mentor login page — if already admin/mentor, go to admin panel
+  if (pathname === "/mentor" && isMentorOrAdmin) {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 

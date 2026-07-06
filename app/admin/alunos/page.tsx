@@ -19,13 +19,14 @@ export default function AlunosPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-
-  const SUPERADMIN = "victorkalamith@gmail.com";
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
     if (status === "authenticated") {
-      if ((session.user as any).role !== "ADMIN") router.push("/dashboard");
+      const role = (session.user as any).role;
+      if (role !== "ADMIN" && role !== "MENTOR") router.push("/dashboard");
       else loadStudents();
     }
   }, [status]);
@@ -41,9 +42,24 @@ export default function AlunosPage() {
       setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, channels: [] }, ...prev]);
   }
 
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setStudents((prev) => prev.filter((s) => s.id !== id));
+      }
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  }
+
   if (status !== "authenticated" || loading) return null;
 
-  const isSuperAdmin = (session?.user as any)?.email === SUPERADMIN;
+  const role = (session?.user as any)?.role as "ADMIN" | "MENTOR" | "STUDENT";
+  const isAdmin = role === "ADMIN";
+
   const filtered = search.trim()
     ? students.filter((s) =>
         s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -52,7 +68,7 @@ export default function AlunosPage() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar role="ADMIN" userName={session?.user?.name ?? ""} />
+      <Sidebar role={role} userName={session?.user?.name ?? ""} />
 
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-5xl mx-auto space-y-6">
@@ -63,7 +79,7 @@ export default function AlunosPage() {
                 {students.length} aluno{students.length !== 1 ? "s" : ""}
               </p>
             </div>
-            {isSuperAdmin && <CreateUserModal onCreated={handleUserCreated} />}
+            {isAdmin && <CreateUserModal onCreated={handleUserCreated} />}
           </div>
 
           <input
@@ -77,37 +93,75 @@ export default function AlunosPage() {
           {filtered.length === 0 ? (
             <div className="text-center py-16 text-gray-600">
               <p className="text-lg mb-2">{search ? "Nenhum aluno encontrado" : "Nenhum aluno ainda"}</p>
-              {!search && <p className="text-sm">Crie um usuário para adicionar alunos à plataforma.</p>}
+              {!search && isAdmin && <p className="text-sm">Crie um usuário para adicionar alunos à plataforma.</p>}
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4">
               {filtered.map((student) => (
-                <Link
-                  key={student.id}
-                  href={`/admin/alunos/${student.id}`}
-                  className="group bg-[#13131e] hover:bg-[#1c1c2a] border border-white/5 hover:border-violet-500/30 rounded-xl p-4 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-9 h-9 rounded-full bg-violet-500/20 flex items-center justify-center text-sm font-medium text-violet-300 flex-shrink-0">
-                      {student.name.charAt(0).toUpperCase()}
+                <div key={student.id} className="relative group">
+                  <Link
+                    href={`/admin/alunos/${student.id}`}
+                    className="block bg-[#13131e] hover:bg-[#1c1c2a] border border-white/5 hover:border-violet-500/30 rounded-xl p-4 transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-violet-500/20 flex items-center justify-center text-sm font-medium text-violet-300 flex-shrink-0">
+                        {student.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-100 truncate group-hover:text-white transition-colors">
+                          {student.name}
+                        </p>
+                        <p className="text-xs text-gray-600 truncate">{student.email}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-100 truncate group-hover:text-white transition-colors">
-                        {student.name}
-                      </p>
-                      <p className="text-xs text-gray-600 truncate">{student.email}</p>
+                    <div className="bg-white/5 rounded-lg px-3 py-2 text-center">
+                      <p className="text-lg font-semibold text-gray-200">{student.channels.length}</p>
+                      <p className="text-xs text-gray-500">{student.channels.length !== 1 ? "canais" : "canal"}</p>
                     </div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg px-3 py-2 text-center">
-                    <p className="text-lg font-semibold text-gray-200">{student.channels.length}</p>
-                    <p className="text-xs text-gray-500">{student.channels.length !== 1 ? "canais" : "canal"}</p>
-                  </div>
-                </Link>
+                  </Link>
+
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); setConfirmDeleteId(student.id); }}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md bg-black/60 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-all text-xs"
+                      title="Remover aluno"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* Delete confirmation dialog */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#13131e] border border-white/10 rounded-xl w-full max-w-sm mx-4 p-6 space-y-4">
+            <h2 className="text-base font-semibold text-white">Remover aluno?</h2>
+            <p className="text-sm text-gray-400">
+              Isso vai remover o aluno <span className="text-white font-medium">{students.find(s => s.id === confirmDeleteId)?.name}</span> e todos os dados associados. Ação irreversível.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 py-2 text-sm text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDeleteId)}
+                disabled={deletingId === confirmDeleteId}
+                className="flex-1 py-2 text-sm text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-lg transition-colors font-medium"
+              >
+                {deletingId === confirmDeleteId ? "Removendo..." : "Remover"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

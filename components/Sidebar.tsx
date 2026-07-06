@@ -7,7 +7,7 @@ import NotificationBell from "./NotificationBell";
 import AdminProfileModal from "./AdminProfileModal";
 
 interface Props {
-  role: "ADMIN" | "STUDENT";
+  role: "ADMIN" | "MENTOR" | "STUDENT";
   userName: string;
 }
 
@@ -29,7 +29,7 @@ export default function Sidebar({ role, userName }: Props) {
     { href: "/canais/novo", label: "Adicionar Canal", icon: "+" },
   ];
 
-  const links = role === "ADMIN" ? adminLinks : studentLinks;
+  const links = (role === "ADMIN" || role === "MENTOR") ? adminLinks : studentLinks;
 
   return (
     <aside className="w-64 flex-shrink-0 bg-[#0f0f14] border-r border-white/5 flex flex-col h-screen overflow-hidden">
@@ -68,11 +68,11 @@ export default function Sidebar({ role, userName }: Props) {
           )}
           <div className="min-w-0">
             <p className="text-xs text-gray-200 truncate">{displayName}</p>
-            <p className="text-xs text-gray-500">{role === "ADMIN" ? "Mentor" : "Aluno"}</p>
+            <p className="text-xs text-gray-500">{role === "ADMIN" ? "Admin" : role === "MENTOR" ? "Mentor" : "Aluno"}</p>
           </div>
         </div>
 
-        {role === "ADMIN" && userId && (
+        {(role === "ADMIN" || role === "MENTOR") && userId && (
           <div className="px-2 mb-1">
             <AdminProfileModal
               userId={userId}
