@@ -1,5 +1,8 @@
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 import { NextResponse } from "next/server";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -27,7 +30,7 @@ export default auth((req) => {
   // Student login page — if already logged in, redirect to right place
   if (pathname === "/login" && session) {
     return NextResponse.redirect(
-      new URL(role === "ADMIN" ? "/admin" : "/dashboard", req.url)
+      new URL(isMentorOrAdmin ? "/admin" : "/dashboard", req.url)
     );
   }
 
