@@ -60,7 +60,16 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(
     searchParams.get("videoId")
   );
-  const autoOpenChannel = searchParams.get("feedback") === "channel";
+  const [autoOpenChannel, setAutoOpenChannel] = useState(
+    searchParams.get("feedback") === "channel"
+  );
+
+  useEffect(() => {
+    const vid = searchParams.get("videoId");
+    const chan = searchParams.get("feedback") === "channel";
+    if (vid) setSelectedVideoId(vid);
+    if (chan) setAutoOpenChannel(true);
+  }, [searchParams]);
   const [syncing, setSyncing] = useState(false);
   const [autoSyncing, setAutoSyncing] = useState(false);
   const [loadingVideos, setLoadingVideos] = useState(false);
