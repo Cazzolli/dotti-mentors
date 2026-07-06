@@ -9,8 +9,9 @@ export default auth((req) => {
   const session = req.auth;
   const role = (session?.user as any)?.role;
 
-  // Unauthenticated → login
+  // Unauthenticated → login (but don't redirect if already on a login page)
   if (!session) {
+    if (pathname === "/login" || pathname === "/mentor") return NextResponse.next();
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
