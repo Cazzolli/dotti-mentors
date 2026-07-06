@@ -18,6 +18,7 @@ model User {
   channels      Channel[]
   comments      Comment[]
   notifications Notification[]
+  sentInvites   Invite[]       @relation("InviteCreator")
 }
 
 enum Role {
@@ -104,4 +105,15 @@ enum CommentType {
   FEEDBACK
   DIRECIONAMENTO
   OBSERVACAO
+}
+
+model Invite {
+  id          String   @id @default(cuid())
+  email       String
+  token       String   @unique @default(uuid())
+  used        Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  createdById String
+  createdBy   User     @relation("InviteCreator", fields: [createdById], references: [id])
 }
