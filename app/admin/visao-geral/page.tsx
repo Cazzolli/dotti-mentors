@@ -284,6 +284,7 @@ export default function AdminPage() {
   const [searchInput, setSearchInput] = useState("");
   const [studentFilter, setStudentFilter] = useState("");
   const [studentInput, setStudentInput] = useState("");
+  const [minSubscribers, setMinSubscribers] = useState(0);
   const now = Date.now();
 
   useEffect(() => {
@@ -296,7 +297,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (status === "authenticated") loadVideos(0);
-  }, [status, period, sortBy, search, studentFilter]);
+  }, [status, period, sortBy, search, studentFilter, minSubscribers]);
 
   const loadVideos = useCallback(async (newOffset: number) => {
     setLoadingVideos(true);
@@ -306,6 +307,7 @@ export default function AdminPage() {
     });
     if (search) params.set("search", search);
     if (studentFilter) params.set("studentName", studentFilter);
+    if (minSubscribers > 0) params.set("minSubscribers", String(minSubscribers));
     const res = await fetch(`/api/admin/videos?${params}`);
     if (res.ok) {
       const data = await res.json();
@@ -315,7 +317,7 @@ export default function AdminPage() {
       setVideoOffset(newOffset + LIMIT);
     }
     setLoadingVideos(false);
-  }, [period, sortBy, search, studentFilter]);
+  }, [period, sortBy, search, studentFilter, minSubscribers]);
 
   if (status !== "authenticated") return null;
 
@@ -355,6 +357,26 @@ export default function AdminPage() {
                     {s.label}
                   </button>
                 ))}
+              </div>
+
+              {/* Subscribers filter */}
+              <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1">
+                <button
+                  onClick={() => setMinSubscribers(0)}
+                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                    minSubscribers === 0 ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  Qualquer
+                </button>
+                <button
+                  onClick={() => setMinSubscribers(1000)}
+                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                    minSubscribers === 1000 ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  +1k inscritos
+                </button>
               </div>
 
               {/* Search by student */}

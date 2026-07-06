@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") ?? "50");
   const search = searchParams.get("search") ?? "";
   const studentName = searchParams.get("studentName") ?? "";
+  const minSubscribers = parseInt(searchParams.get("minSubscribers") ?? "0");
 
   const where: any = {};
 
@@ -25,7 +26,11 @@ export async function GET(req: NextRequest) {
   }
 
   if (search) where.title = { contains: search };
-  if (studentName) where.channel = { student: { name: { contains: studentName } } };
+
+  const channelWhere: any = {};
+  if (studentName) channelWhere.student = { name: { contains: studentName } };
+  if (minSubscribers > 0) channelWhere.subscriberCount = { gte: minSubscribers };
+  if (Object.keys(channelWhere).length > 0) where.channel = channelWhere;
 
   const orderBy: any =
     sortBy === "oldest" ? { publishedAt: "asc" }
