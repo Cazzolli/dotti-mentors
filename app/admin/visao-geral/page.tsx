@@ -289,7 +289,8 @@ export default function AdminPage() {
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
     if (status === "authenticated") {
-      if ((session.user as any).role !== "ADMIN") router.push("/dashboard");
+      const r = (session.user as any).role;
+      if (r !== "ADMIN" && r !== "MENTOR") router.push("/dashboard");
     }
   }, [status]);
 
