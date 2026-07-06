@@ -41,7 +41,7 @@ export default function AlunosPage() {
 
   function handleUserCreated(user: { id: string; name: string; email: string; role: string }) {
     if (user.role === "STUDENT")
-      setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, channels: [] }, ...prev]);
+      setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, blocked: false, channels: [] }, ...prev]);
   }
 
   async function handleToggleBlock(student: Student) {
