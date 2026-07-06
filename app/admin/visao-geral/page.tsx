@@ -319,6 +319,19 @@ export default function AdminPage() {
     setLoadingVideos(false);
   }, [period, sortBy, search, studentFilter, minSubscribers]);
 
+  const hasActiveFilters =
+    period !== "all" || sortBy !== "recent" || search !== "" || studentFilter !== "" || minSubscribers > 0;
+
+  function clearFilters() {
+    setPeriod("all");
+    setSortBy("recent");
+    setSearch("");
+    setSearchInput("");
+    setStudentFilter("");
+    setStudentInput("");
+    setMinSubscribers(0);
+  }
+
   if (status !== "authenticated") return null;
 
   return (
@@ -412,6 +425,16 @@ export default function AdminPage() {
                     className="px-2 text-gray-500 hover:text-white text-sm transition-colors">✕</button>
                 )}
               </form>
+
+              {/* Clear all filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-colors"
+                >
+                  Limpar filtros
+                </button>
+              )}
             </div>
           </div>
         </div>
