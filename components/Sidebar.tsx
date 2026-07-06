@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NotificationBell from "./NotificationBell";
 import AdminProfileModal from "./AdminProfileModal";
 
@@ -19,6 +19,17 @@ export default function Sidebar({ role, userName }: Props) {
 
   const [displayName, setDisplayName] = useState(userName);
   const [displayAvatar, setDisplayAvatar] = useState<string | null>(userAvatarUrl);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetch(`/api/users/${userId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.avatarUrl) setDisplayAvatar(data.avatarUrl);
+        if (data?.name) setDisplayName(data.name);
+      })
+      .catch(() => {});
+  }, [userId]);
 
   const adminLinks = [
     { href: "/admin/alunos", label: "Alunos", icon: "◎" },

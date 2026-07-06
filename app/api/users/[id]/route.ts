@@ -3,26 +3,49 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   const user = session.user as any;
 
-  // only the user themselves can edit their own profile
-  if (user.id !== id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (user.id !== id && user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const dbUser = await db.user.findUnique({
+    where: { id },
+    select: { id: true, name: true, email: true, avatarUrl: true, role: true, blocked: true },
+  });
+  if (!dbUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  return NextResponse.json(dbUser);
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const user = session.user as any;
   const { name, avatarUrl, currentPassword, newPassword, blocked } = await req.json();
 
-  // block/unblock — ADMIN only, targeting other users
+  // block/unblock — ADMIN only, can target other users
   if (blocked !== undefined) {
     if (user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (user.id === id) return NextResponse.json({ error: "Não é possível bloquear sua própria conta" }, { status: 400 });
-    const updated = await db.user.update({ where: { id }, data: { blocked: Boolean(blocked) }, select: { id: true, blocked: true } });
+    const updated = await db.user.update({
+      where: { id },
+      data: { blocked: Boolean(blocked) },
+      select: { id: true, blocked: true },
+    });
     return NextResponse.json(updated);
+  }
+
+  // all other operations — only the user themselves
+  if (user.id !== id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   // password change
@@ -55,7 +78,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json(updated);
 }
 
-// ADMIN only: delete a student or mentor
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,7 +89,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
 
-  // cannot delete yourself
   if (user.id === id) {
     return NextResponse.json({ error: "Não é possível remover sua própria conta" }, { status: 400 });
   }
@@ -75,7 +96,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const target = await db.user.findUnique({ where: { id }, select: { role: true } });
   if (!target) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
 
-  // only ADMIN can delete other ADMINs (and only if there's more than one)
   if (target.role === "ADMIN") {
     return NextResponse.json({ error: "Não é possível remover outro administrador" }, { status: 403 });
   }
