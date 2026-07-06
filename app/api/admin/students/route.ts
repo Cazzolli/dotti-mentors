@@ -15,9 +15,13 @@ export async function GET() {
 
   const students = await db.user.findMany({
     where: { role: "STUDENT" },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      blocked: true,
       channels: {
-        include: { _count: { select: { videos: true, comments: true } } },
+        select: { id: true },
         orderBy: { createdAt: "desc" },
       },
     },

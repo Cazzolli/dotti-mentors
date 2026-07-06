@@ -10,6 +10,7 @@ interface Student {
   id: string;
   name: string;
   email: string;
+  blocked: boolean;
   channels: { id: string }[];
 }
 
@@ -21,6 +22,7 @@ export default function AlunosPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [togglingBlockId, setTogglingBlockId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -40,6 +42,24 @@ export default function AlunosPage() {
   function handleUserCreated(user: { id: string; name: string; email: string; role: string }) {
     if (user.role === "STUDENT")
       setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, channels: [] }, ...prev]);
+  }
+
+  async function handleToggleBlock(student: Student) {
+    setTogglingBlockId(student.id);
+    try {
+      const res = await fetch(`/api/users/${student.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocked: !student.blocked }),
+      });
+      if (res.ok) {
+        setStudents((prev) =>
+          prev.map((s) => s.id === student.id ? { ...s, blocked: !s.blocked } : s)
+        );
+      }
+    } finally {
+      setTogglingBlockId(null);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -101,7 +121,11 @@ export default function AlunosPage() {
                 <div key={student.id} className="relative group">
                   <Link
                     href={`/admin/alunos/${student.id}`}
-                    className="block bg-[#13131e] hover:bg-[#1c1c2a] border border-white/5 hover:border-violet-500/30 rounded-xl p-4 transition-all duration-200"
+                    className={`block border rounded-xl p-4 transition-all duration-200 ${
+                      student.blocked
+                        ? "bg-[#13131e] border-white/5 opacity-60"
+                        : "bg-[#13131e] hover:bg-[#1c1c2a] border-white/5 hover:border-violet-500/30"
+                    }`}
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-9 h-9 rounded-full bg-violet-500/20 flex items-center justify-center text-sm font-medium text-violet-300 flex-shrink-0">
@@ -118,16 +142,40 @@ export default function AlunosPage() {
                       <p className="text-lg font-semibold text-gray-200">{student.channels.length}</p>
                       <p className="text-xs text-gray-500">{student.channels.length !== 1 ? "canais" : "canal"}</p>
                     </div>
+                    {student.blocked && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-red-400">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Bloqueado
+                      </div>
+                    )}
                   </Link>
 
                   {isAdmin && (
-                    <button
-                      onClick={(e) => { e.preventDefault(); setConfirmDeleteId(student.id); }}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md bg-black/60 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-all text-xs"
-                      title="Remover aluno"
-                    >
-                      ✕
-                    </button>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1 transition-all">
+                      <button
+                        onClick={(e) => { e.preventDefault(); handleToggleBlock(student); }}
+                        disabled={togglingBlockId === student.id}
+                        className={`w-6 h-6 flex items-center justify-center rounded-md bg-black/60 transition-colors text-xs disabled:opacity-50 ${
+                          student.blocked
+                            ? "hover:bg-green-500/20 text-green-400"
+                            : "hover:bg-yellow-500/20 text-yellow-400"
+                        }`}
+                        title={student.blocked ? "Desbloquear acesso" : "Bloquear acesso"}
+                      >
+                        {student.blocked ? (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                        ) : (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); setConfirmDeleteId(student.id); }}
+                        className="w-6 h-6 flex items-center justify-center rounded-md bg-black/60 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-colors text-xs"
+                        title="Remover aluno"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}

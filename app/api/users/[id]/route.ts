@@ -15,7 +15,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const { name, avatarUrl, currentPassword, newPassword } = await req.json();
+  const { name, avatarUrl, currentPassword, newPassword, blocked } = await req.json();
+
+  // block/unblock — ADMIN only, targeting other users
+  if (blocked !== undefined) {
+    if (user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (user.id === id) return NextResponse.json({ error: "Não é possível bloquear sua própria conta" }, { status: 400 });
+    const updated = await db.user.update({ where: { id }, data: { blocked: Boolean(blocked) }, select: { id: true, blocked: true } });
+    return NextResponse.json(updated);
+  }
 
   // password change
   if (newPassword) {
