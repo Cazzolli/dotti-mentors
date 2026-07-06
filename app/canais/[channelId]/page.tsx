@@ -191,7 +191,8 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
 
   if (status !== "authenticated" || !channel) return null;
 
-  const backHref = role === "ADMIN" ? `/admin/alunos/${channel.studentId}` : "/dashboard";
+  const isMentorOrAdmin = role === "ADMIN" || role === "MENTOR";
+  const backHref = isMentorOrAdmin ? `/admin/alunos/${channel.studentId}` : "/dashboard";
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -250,7 +251,7 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
                     {channel.handle}
                   </a>
                 )}
-                {role === "ADMIN" && (
+                {isMentorOrAdmin && (
                   <span className="text-xs text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full flex-shrink-0">
                     {channel.student.name}
                   </span>

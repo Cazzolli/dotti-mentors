@@ -94,7 +94,7 @@ export default function CommentSection({
     }
   }
 
-  const isAdmin = currentUserRole === "ADMIN";
+  const isMentorOrAdmin = currentUserRole === "ADMIN" || currentUserRole === "MENTOR";
 
   return (
     <div className="flex flex-col gap-2">
@@ -109,10 +109,10 @@ export default function CommentSection({
         count={channelComments.length}
         open={channelOpen}
         onToggle={() => setChannelOpen((v) => !v)}
-        onAdd={isAdmin ? () => { setChannelOpen(true); setChannelFormOpen((v) => !v); } : undefined}
+        onAdd={isMentorOrAdmin ? () => { setChannelOpen(true); setChannelFormOpen((v) => !v); } : undefined}
         addActive={channelFormOpen}
       >
-        {isAdmin && channelFormOpen && (
+        {isMentorOrAdmin && channelFormOpen && (
           <InlineForm
             onSubmit={(type, content) => submitComment("channel", type, content)}
             onCancel={() => setChannelFormOpen(false)}
@@ -147,10 +147,10 @@ export default function CommentSection({
         count={videoComments.length}
         open={videoOpen}
         onToggle={() => setVideoOpen((v) => !v)}
-        onAdd={isAdmin && videoId ? () => { setVideoOpen(true); setVideoFormOpen((v) => !v); } : undefined}
+        onAdd={isMentorOrAdmin && videoId ? () => { setVideoOpen(true); setVideoFormOpen((v) => !v); } : undefined}
         addActive={videoFormOpen}
       >
-        {isAdmin && videoFormOpen && videoId && (
+        {isMentorOrAdmin && videoFormOpen && videoId && (
           <InlineForm
             onSubmit={(type, content) => submitComment("video", type, content)}
             onCancel={() => setVideoFormOpen(false)}
@@ -346,14 +346,14 @@ function CommentCard({
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-gray-300 font-medium leading-none">
               {c.author.name}
-              {c.author.role === "ADMIN" && <span className="ml-1 text-violet-400">· mentor</span>}
+              {(c.author.role === "ADMIN" || c.author.role === "MENTOR") && <span className="ml-1 text-violet-400">· mentor</span>}
             </span>
             <span className={`self-start text-xs font-medium px-1.5 rounded-full border ${color}`}>{label}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-xs text-gray-600">{timeAgo(c.createdAt, now)}</span>
-          {(currentUserRole === "ADMIN" || c.author.id === currentUserId) && (
+          {(currentUserRole === "ADMIN" || currentUserRole === "MENTOR" || c.author.id === currentUserId) && (
             <button onClick={() => onDelete(c.id)} className="text-gray-700 hover:text-red-400 text-xs transition-colors">✕</button>
           )}
         </div>
