@@ -58,11 +58,14 @@ export async function POST(req: NextRequest) {
       data: { ...info, studentId: user.id },
     });
 
-    // notify all admins about the new channel
-    const admins = await db.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
-    if (admins.length > 0) {
+    // notify all admins and mentors about the new channel (each gets their own row)
+    const staff = await db.user.findMany({
+      where: { role: { in: ["ADMIN", "MENTOR"] } },
+      select: { id: true },
+    });
+    if (staff.length > 0) {
       await db.notification.createMany({
-        data: admins.map((a) => ({ userId: a.id, type: "NEW_CHANNEL", channelId: channel.id })),
+        data: staff.map((u) => ({ userId: u.id, type: "NEW_CHANNEL", channelId: channel.id })),
       });
     }
 
