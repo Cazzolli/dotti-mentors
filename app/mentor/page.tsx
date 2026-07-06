@@ -2,9 +2,8 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-export default function LoginPage() {
+export default function MentorLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,17 +23,18 @@ export default function LoginPage() {
       return;
     }
 
-    // fetch session to check role
     const sessionRes = await fetch("/api/auth/session");
     const session = await sessionRes.json();
     const role = session?.user?.role;
 
-    if (role === "ADMIN") {
-      router.push("/admin");
-    } else {
-      router.push("/dashboard");
+    if (role !== "ADMIN") {
+      setError("Acesso restrito a mentores.");
+      await fetch("/api/auth/signout", { method: "POST" });
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    router.push("/admin");
   }
 
   return (
@@ -45,7 +45,7 @@ export default function LoginPage() {
             <span className="text-white font-bold text-lg">DM</span>
           </div>
           <h1 className="text-2xl font-bold text-white">DottiMentors</h1>
-          <p className="text-gray-500 text-sm mt-1">Acesse sua conta</p>
+          <p className="text-gray-500 text-sm mt-1">Área do mentor</p>
         </div>
 
         <form
@@ -67,7 +67,7 @@ export default function LoginPage() {
               required
               autoFocus
               className="w-full bg-[#09090b] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
-              placeholder="seu@email.com"
+              placeholder="mentor@email.com"
             />
           </div>
 
@@ -91,7 +91,6 @@ export default function LoginPage() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-
       </div>
     </div>
   );
