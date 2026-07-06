@@ -25,6 +25,8 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
   const [channels, setChannels] = useState<Channel[]>([]);
   const [studentName, setStudentName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteChannelId, setConfirmDeleteChannelId] = useState<string | null>(null);
+  const [deletingChannelId, setDeletingChannelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -45,9 +47,24 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
     setLoading(false);
   }
 
+  async function handleDeleteChannel(channelId: string) {
+    setDeletingChannelId(channelId);
+    try {
+      const res = await fetch(`/api/channels/${channelId}`, { method: "DELETE" });
+      if (res.ok) {
+        setChannels((prev) => prev.filter((c) => c.id !== channelId));
+      }
+    } finally {
+      setDeletingChannelId(null);
+      setConfirmDeleteChannelId(null);
+    }
+  }
+
   if (status !== "authenticated" || loading) return null;
 
   const role = (session?.user as any)?.role ?? "STUDENT";
+  const isAdmin = role === "ADMIN";
+  const channelToDelete = channels.find((c) => c.id === confirmDeleteChannelId);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -80,12 +97,52 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {channels.map((ch) => (
-                <ChannelCard key={ch.id} channel={ch} />
+                <div key={ch.id} className="relative group">
+                  <ChannelCard channel={ch} />
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); setConfirmDeleteChannelId(ch.id); }}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md bg-black/60 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-all text-xs z-10"
+                      title="Remover canal"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* Delete channel confirmation dialog */}
+      {confirmDeleteChannelId && channelToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#13131e] border border-white/10 rounded-xl w-full max-w-sm mx-4 p-6 space-y-4">
+            <h2 className="text-base font-semibold text-white">Remover canal?</h2>
+            <p className="text-sm text-gray-400">
+              Isso vai remover o canal{" "}
+              <span className="text-white font-medium">{channelToDelete.name}</span>{" "}
+              e todos os vídeos e feedbacks associados. Ação irreversível.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setConfirmDeleteChannelId(null)}
+                className="flex-1 py-2 text-sm text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteChannel(confirmDeleteChannelId)}
+                disabled={deletingChannelId === confirmDeleteChannelId}
+                className="flex-1 py-2 text-sm text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-lg transition-colors font-medium"
+              >
+                {deletingChannelId === confirmDeleteChannelId ? "Removendo..." : "Remover canal"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
