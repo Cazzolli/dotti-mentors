@@ -25,10 +25,10 @@ export async function GET(req: NextRequest) {
     if (d) where.publishedAt = { gte: new Date(Date.now() - d * 24 * 60 * 60 * 1000) };
   }
 
-  if (search) where.title = { contains: search };
+  if (search) where.title = { contains: search, mode: "insensitive" };
 
   const channelWhere: any = {};
-  if (studentName) channelWhere.student = { name: { contains: studentName } };
+  if (studentName) channelWhere.student = { name: { contains: studentName, mode: "insensitive" } };
   if (minSubscribers > 0) channelWhere.subscriberCount = { gte: minSubscribers };
   if (Object.keys(channelWhere).length > 0) where.channel = channelWhere;
 
