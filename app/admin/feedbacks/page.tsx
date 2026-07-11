@@ -12,8 +12,8 @@ interface FeedbackComment {
   createdAt: string;
   videoId: string | null;
   author: { id: string; name: string; role: string; avatarUrl: string | null };
-  channel: { id: string; name: string; handle: string | null; student: { id: string; name: string } };
-  video: { id: string; title: string; youtubeVideoId: string } | null;
+  channel: { id: string; name: string; handle: string | null; avatarUrl: string | null; channelIdea: string | null; student: { id: string; name: string } };
+  video: { id: string; title: string; youtubeVideoId: string; thumbnailUrl: string | null } | null;
 }
 
 const PERIODS = [
@@ -302,10 +302,12 @@ function FeedbackCard({
   const { label, color } = commentTypeLabel(c.type);
   const isEditing = editingId === c.id;
   const isOwn = c.author.id === currentUserId;
+  const isVideo = c.videoId !== null;
+  const [ideaOpen, setIdeaOpen] = useState(false);
 
   return (
     <div className="bg-[#13131e] border border-white/5 rounded-xl p-4 space-y-3">
-      {/* Header */}
+      {/* Header: autor + tipo + data + ações */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           {c.author.avatarUrl ? (
@@ -325,17 +327,13 @@ function FeedbackCard({
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {isOwn && !isEditing && (
-            <button onClick={() => onStartEdit(c)}
-              className="text-gray-600 hover:text-violet-400 transition-colors"
-              title="Editar feedback">
+            <button onClick={() => onStartEdit(c)} className="text-gray-600 hover:text-violet-400 transition-colors" title="Editar">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             </button>
           )}
-          <button onClick={onNavigate}
-            className="text-gray-600 hover:text-white transition-colors"
-            title="Ir para o canal">
+          <button onClick={onNavigate} className="text-gray-600 hover:text-white transition-colors" title="Ir para o canal">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -343,19 +341,58 @@ function FeedbackCard({
         </div>
       </div>
 
-      {/* Canal + aluno + vídeo */}
-      <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500">
-        <span className="text-gray-400 font-medium">{c.channel.name}</span>
-        {c.channel.handle && <span className="text-gray-600">{c.channel.handle}</span>}
-        <span className="text-gray-700">·</span>
-        <span>{c.channel.student.name}</span>
-        {c.video && (
-          <>
-            <span className="text-gray-700">·</span>
-            <span className="text-gray-400 truncate max-w-xs">{c.video.title}</span>
-          </>
-        )}
-      </div>
+      {/* Preview: thumbnail (vídeo) ou logo+nome (canal) */}
+      {isVideo && c.video ? (
+        <button onClick={onNavigate}
+          className="flex items-center gap-3 w-full text-left rounded-lg overflow-hidden bg-black/20 border border-white/5 hover:border-white/15 transition-colors group">
+          {c.video.thumbnailUrl ? (
+            <img src={c.video.thumbnailUrl} alt={c.video.title}
+              className="w-28 h-16 object-cover flex-shrink-0" />
+          ) : (
+            <div className="w-28 h-16 flex-shrink-0 bg-white/5 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+              </svg>
+            </div>
+          )}
+          <div className="flex-1 min-w-0 px-2 py-1">
+            <p className="text-xs text-gray-300 font-medium line-clamp-2 leading-snug group-hover:text-white transition-colors">{c.video.title}</p>
+            <p className="text-xs text-gray-600 mt-1">{c.channel.name}</p>
+          </div>
+        </button>
+      ) : (
+        <div className="flex items-center gap-3">
+          <button onClick={onNavigate}
+            className="flex items-center gap-2 flex-1 min-w-0 bg-black/20 border border-white/5 hover:border-white/15 transition-colors rounded-lg px-3 py-2 group">
+            {c.channel.avatarUrl ? (
+              <img src={c.channel.avatarUrl} alt={c.channel.name} referrerPolicy="no-referrer"
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1C4.5 20.5 12 20.5 12 20.5s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z"/>
+                </svg>
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-gray-300 group-hover:text-white transition-colors truncate">{c.channel.name}</p>
+              {c.channel.handle && <p className="text-xs text-gray-600 truncate">{c.channel.handle}</p>}
+            </div>
+          </button>
+          {c.channel.channelIdea && (
+            <button onClick={() => setIdeaOpen(true)}
+              className="flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors font-medium">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Ver ideia
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Aluno */}
+      <p className="text-xs text-gray-600">Aluno: <span className="text-gray-500">{c.channel.student.name}</span></p>
 
       {/* Conteúdo / edição */}
       {isEditing ? (
@@ -363,8 +400,7 @@ function FeedbackCard({
           <textarea
             value={editContent}
             onChange={(e) => onEditChange(e.target.value)}
-            autoFocus
-            rows={4}
+            autoFocus rows={4}
             className="w-full bg-[#0d0d14] border border-white/10 focus:border-violet-500/50 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none resize-none leading-relaxed"
           />
           <div className="flex gap-2 justify-end">
@@ -381,6 +417,73 @@ function FeedbackCard({
       ) : (
         <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap break-words">{c.content}</p>
       )}
+
+      {/* Modal de ideia do canal */}
+      {ideaOpen && c.channel.channelIdea && (
+        <IdeaModal
+          channelName={c.channel.name}
+          channelAvatarUrl={c.channel.avatarUrl}
+          idea={c.channel.channelIdea}
+          onClose={() => setIdeaOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function IdeaModal({ channelName, channelAvatarUrl, idea, onClose }: {
+  channelName: string;
+  channelAvatarUrl: string | null;
+  idea: string;
+  onClose: () => void;
+}) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+  function renderWithLinks(text: string) {
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) =>
+      urlRegex.test(part) ? (
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+          className="text-violet-400 hover:text-violet-300 underline underline-offset-2 break-all transition-colors">
+          {part}
+        </a>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#13131e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            {channelAvatarUrl ? (
+              <img src={channelAvatarUrl} alt={channelName} referrerPolicy="no-referrer"
+                className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-3.5 h-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1C4.5 20.5 12 20.5 12 20.5s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z"/>
+                </svg>
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-semibold text-white">{channelName}</p>
+              <p className="text-xs text-gray-500">Origem e referência do canal</p>
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-5 py-4 max-h-96 overflow-y-auto">
+          <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{renderWithLinks(idea)}</p>
+        </div>
+      </div>
     </div>
   );
 }

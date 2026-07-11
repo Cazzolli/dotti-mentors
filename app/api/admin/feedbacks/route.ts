@@ -49,10 +49,12 @@ export async function GET(req: NextRequest) {
           id: true,
           name: true,
           handle: true,
+          avatarUrl: true,
+          channelIdea: true,
           student: { select: { id: true, name: true } },
         },
       },
-      video: { select: { id: true, title: true, youtubeVideoId: true } },
+      video: { select: { id: true, title: true, youtubeVideoId: true, thumbnailUrl: true } },
     },
   });
 
