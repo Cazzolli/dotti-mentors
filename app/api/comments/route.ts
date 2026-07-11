@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const allVideos = searchParams.get("allVideos") === "true";
 
-  const where: any = { channelId, parentId: null };
+  const where: any = { channelId };
   if (allVideos) {
     where.videoId = { not: null };
   } else if (videoId) {
@@ -31,20 +31,11 @@ export async function GET(req: NextRequest) {
     where.videoId = null;
   }
 
-  const replyInclude = {
-    author: { select: { id: true, name: true, role: true, avatarUrl: true } },
-  };
-
   const comments = await db.comment.findMany({
     where,
     include: {
       author: { select: { id: true, name: true, role: true, avatarUrl: true } },
       video: { select: { id: true, title: true } },
-      replies: {
-        where: { parentId: { not: null } },
-        include: replyInclude,
-        orderBy: { createdAt: "asc" },
-      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -57,25 +48,18 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const user = session.user as any;
-  const { channelId, videoId, type, content, parentId } = await req.json();
+  const { channelId, videoId, type, content } = await req.json();
 
-  if (!channelId || !content?.trim()) {
+  if (!channelId || !type || !content?.trim()) {
     return NextResponse.json({ error: "Campos obrigatórios ausentes" }, { status: 400 });
   }
 
-  const isReply = !!parentId;
-  const isMentorOrAdmin = user.role === "ADMIN" || user.role === "MENTOR";
-
-  // students can only reply (parentId required), not create top-level feedback
-  if (!isMentorOrAdmin && !isReply) {
+  // only ADMIN and MENTOR can leave feedback
+  if (user.role !== "ADMIN" && user.role !== "MENTOR") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  // top-level feedback requires a type
-  if (!isReply && !type) {
-    return NextResponse.json({ error: "Tipo obrigatório" }, { status: 400 });
-  }
-
+  // validate content length
   if (content.trim().length > 5000) {
     return NextResponse.json({ error: "Conteúdo muito longo" }, { status: 400 });
   }
@@ -83,27 +67,13 @@ export async function POST(req: NextRequest) {
   const channel = await db.channel.findUnique({ where: { id: channelId }, select: { id: true, studentId: true } });
   if (!channel) return NextResponse.json({ error: "Canal não encontrado" }, { status: 404 });
 
-  // students can only reply on their own channel
-  if (!isMentorOrAdmin && channel.studentId !== user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
-  if (isReply) {
-    const parent = await db.comment.findUnique({ where: { id: parentId }, select: { id: true, channelId: true, parentId: true } });
-    if (!parent) return NextResponse.json({ error: "Comentário pai não encontrado" }, { status: 404 });
-    if (parent.channelId !== channelId) return NextResponse.json({ error: "Canal inválido" }, { status: 400 });
-    // no nested replies — only one level deep
-    if (parent.parentId) return NextResponse.json({ error: "Respostas aninhadas não permitidas" }, { status: 400 });
-  }
-
   const comment = await db.comment.create({
     data: {
       channelId,
       videoId: videoId ?? null,
-      type: isReply ? "RESPOSTA" : type,
+      type,
       content: content.trim(),
       authorId: user.id,
-      parentId: parentId ?? null,
     },
     include: {
       author: { select: { id: true, name: true, role: true, avatarUrl: true } },
@@ -111,8 +81,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // notify the student when mentor leaves top-level feedback
-  if (!isReply && channel.studentId !== user.id) {
+  // notify the student if the author is a mentor
+  if (channel.studentId !== user.id) {
     const existing = await db.notification.findFirst({
       where: { userId: channel.studentId, commentId: comment.id },
     });

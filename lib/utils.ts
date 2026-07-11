@@ -61,8 +61,6 @@ export function commentTypeLabel(type: string): { label: string; color: string }
       return { label: "Direcionamento", color: "text-violet-400 bg-violet-500/10 border-violet-500/30" };
     case "OBSERVACAO":
       return { label: "Observação", color: "text-amber-400 bg-amber-500/10 border-amber-500/30" };
-    case "RESPOSTA":
-      return { label: "Resposta", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" };
     default:
       return { label: type, color: "text-gray-400 bg-gray-500/10 border-gray-500/30" };
   }

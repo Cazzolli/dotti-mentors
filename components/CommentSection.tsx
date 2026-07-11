@@ -4,14 +4,6 @@ import { commentTypeLabel, timeAgo } from "@/lib/utils";
 
 interface Video { id: string; title: string }
 
-interface Reply {
-  id: string;
-  type: string;
-  content: string;
-  createdAt: string;
-  author: { id: string; name: string; role: string; avatarUrl?: string | null };
-}
-
 interface Comment {
   id: string;
   type: string;
@@ -20,7 +12,6 @@ interface Comment {
   videoId: string | null;
   video: Video | null;
   author: { id: string; name: string; role: string; avatarUrl?: string | null };
-  replies: Reply[];
 }
 
 interface Props {
@@ -49,17 +40,10 @@ export default function CommentSection({
   const [videoOpen, setVideoOpen] = useState(!!videoId);
   const [channelFormOpen, setChannelFormOpen] = useState(false);
   const [videoFormOpen, setVideoFormOpen] = useState(false);
-
-  // edit state (for top-level comments by mentor, or replies by anyone)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [editSaving, setEditSaving] = useState(false);
-
-  // reply state
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
-
   const now = Date.now();
-  const isMentorOrAdmin = currentUserRole === "ADMIN" || currentUserRole === "MENTOR";
 
   useEffect(() => {
     loadChannelComments();
@@ -89,38 +73,27 @@ export default function CommentSection({
     const res = await fetch("/api/comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelId, videoId: target === "video" ? videoId : null, type, content }),
+      body: JSON.stringify({
+        channelId,
+        videoId: target === "video" ? videoId : null,
+        type,
+        content,
+      }),
     });
     if (!res.ok) return false;
     const newComment = await res.json();
-    const commentWithReplies = { ...newComment, replies: [] };
     if (target === "channel") {
-      setChannelComments((prev) => [...prev, commentWithReplies]);
+      setChannelComments((prev) => [...prev, newComment]);
       setChannelFormOpen(false);
     } else {
-      setVideoComments((prev) => [...prev, commentWithReplies]);
+      setVideoComments((prev) => [...prev, newComment]);
       setVideoFormOpen(false);
+      if (videoId) loadVideoComments(videoId);
     }
     return true;
   }
 
-  async function submitReply(parentId: string, content: string, targetVideoId?: string | null) {
-    const res = await fetch("/api/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelId, videoId: targetVideoId ?? null, content, parentId }),
-    });
-    if (!res.ok) return false;
-    const newReply = await res.json();
-    const addReply = (comments: Comment[]) =>
-      comments.map((c) => c.id === parentId ? { ...c, replies: [...c.replies, newReply] } : c);
-    setChannelComments(addReply);
-    setVideoComments(addReply);
-    setReplyingToId(null);
-    return true;
-  }
-
-  async function handleEdit(id: string, isReply = false) {
+  async function handleEdit(id: string) {
     if (!editContent.trim()) return;
     setEditSaving(true);
     const res = await fetch(`/api/comments/${id}`, {
@@ -130,20 +103,8 @@ export default function CommentSection({
     });
     if (res.ok) {
       const updated = await res.json();
-      if (isReply) {
-        const updateReply = (comments: Comment[]) =>
-          comments.map((c) => ({
-            ...c,
-            replies: c.replies.map((r) => r.id === id ? { ...r, content: updated.content } : r),
-          }));
-        setChannelComments(updateReply);
-        setVideoComments(updateReply);
-      } else {
-        const updateComment = (comments: Comment[]) =>
-          comments.map((c) => c.id === id ? { ...c, content: updated.content } : c);
-        setChannelComments(updateComment);
-        setVideoComments(updateComment);
-      }
+      setChannelComments((prev) => prev.map((c) => c.id === id ? { ...c, content: updated.content } : c));
+      setVideoComments((prev) => prev.map((c) => c.id === id ? { ...c, content: updated.content } : c));
       setEditingId(null);
     }
     setEditSaving(false);
@@ -158,20 +119,7 @@ export default function CommentSection({
     }
   }
 
-  const sharedCardProps = {
-    currentUserId,
-    currentUserRole,
-    now,
-    editingId,
-    editContent,
-    editSaving,
-    replyingToId,
-    onStartEdit: (id: string, content: string) => { setEditingId(id); setEditContent(content); setReplyingToId(null); },
-    onEditChange: setEditContent,
-    onCancelEdit: () => setEditingId(null),
-    onStartReply: (id: string) => { setReplyingToId(id); setEditingId(null); },
-    onCancelReply: () => setReplyingToId(null),
-  };
+  const isMentorOrAdmin = currentUserRole === "ADMIN" || currentUserRole === "MENTOR";
 
   return (
     <div className="flex flex-col gap-2">
@@ -203,10 +151,17 @@ export default function CommentSection({
               <CommentCard
                 key={c.id}
                 c={c}
-                {...sharedCardProps}
-                onSaveEdit={(id) => handleEdit(id, false)}
-                onDelete={() => handleDelete(c.id, "channel")}
-                onSubmitReply={(content) => submitReply(c.id, content, null)}
+                currentUserId={currentUserId}
+                currentUserRole={currentUserRole}
+                now={now}
+                onDelete={(id) => handleDelete(id, "channel")}
+                editingId={editingId}
+                editContent={editContent}
+                editSaving={editSaving}
+                onStartEdit={(id, content) => { setEditingId(id); setEditContent(content); }}
+                onEditChange={setEditContent}
+                onSaveEdit={handleEdit}
+                onCancelEdit={() => setEditingId(null)}
               />
             ))}
           </div>
@@ -241,10 +196,17 @@ export default function CommentSection({
               <CommentCard
                 key={c.id}
                 c={c}
-                {...sharedCardProps}
-                onSaveEdit={(id) => handleEdit(id, false)}
-                onDelete={() => handleDelete(c.id, "video")}
-                onSubmitReply={(content) => submitReply(c.id, content, videoId)}
+                currentUserId={currentUserId}
+                currentUserRole={currentUserRole}
+                now={now}
+                onDelete={(id) => handleDelete(id, "video")}
+                editingId={editingId}
+                editContent={editContent}
+                editSaving={editSaving}
+                onStartEdit={(id, content) => { setEditingId(id); setEditContent(content); }}
+                onEditChange={setEditContent}
+                onSaveEdit={handleEdit}
+                onCancelEdit={() => setEditingId(null)}
               />
             ))}
           </div>
@@ -256,7 +218,7 @@ export default function CommentSection({
 
 /* ── Accordion ── */
 function Accordion({
-  icon, title, count, open, onToggle, onAdd, addActive, children,
+  icon, title, count, open, onToggle, onAdd, addActive, subtitle, children,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -265,27 +227,46 @@ function Accordion({
   onToggle: () => void;
   onAdd?: () => void;
   addActive?: boolean;
+  subtitle?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="bg-[#111120] border border-white/5 rounded-xl overflow-hidden">
+      {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5">
-        <button onClick={onToggle} className="flex items-center gap-2 flex-1 min-w-0 text-left group">
-          <span className="text-gray-400 group-hover:text-gray-200 transition-colors flex-shrink-0">{icon}</span>
-          <span className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors truncate">{title}</span>
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-2 flex-1 min-w-0 text-left group"
+        >
+          <span className="text-gray-400 group-hover:text-gray-200 transition-colors flex-shrink-0">
+            {icon}
+          </span>
+          <span className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors truncate">
+            {title}
+          </span>
           {count > 0 && (
-            <span className="flex-shrink-0 text-xs bg-white/8 text-gray-400 px-1.5 py-0.5 rounded-full">{count}</span>
+            <span className="flex-shrink-0 text-xs bg-white/8 text-gray-400 px-1.5 py-0.5 rounded-full">
+              {count}
+            </span>
           )}
-          <svg className={`w-3.5 h-3.5 text-gray-600 flex-shrink-0 ml-auto transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className={`w-3.5 h-3.5 text-gray-600 flex-shrink-0 ml-auto transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
+
         {onAdd && (
-          <button onClick={(e) => { e.stopPropagation(); onAdd(); }} title="Dar feedback"
+          <button
+            onClick={(e) => { e.stopPropagation(); onAdd(); }}
+            title="Dar feedback"
             className={`flex-shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-lg border transition-colors ${
-              addActive ? "border-violet-500/60 bg-violet-500/20 text-violet-300" : "border-white/10 text-gray-500 hover:text-white hover:border-white/20"
-            }`}>
+              addActive
+                ? "border-violet-500/60 bg-violet-500/20 text-violet-300"
+                : "border-white/10 text-gray-500 hover:text-white hover:border-white/20"
+            }`}
+          >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -293,16 +274,24 @@ function Accordion({
           </button>
         )}
       </div>
+
       {open && (
         <div className="border-t border-white/5">
-          <div className="px-3 py-3 space-y-2">{children}</div>
+          {subtitle && (
+            <div className="px-3 py-2 border-b border-white/5">
+              <p className="text-xs text-gray-500 line-clamp-1">{subtitle}</p>
+            </div>
+          )}
+          <div className="px-3 py-3 space-y-2">
+            {children}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-/* ── Inline form (mentor, top-level) ── */
+/* ── Inline form ── */
 function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: string) => Promise<boolean>; onCancel: () => void }) {
   const [type, setType] = useState("FEEDBACK");
   const [content, setContent] = useState("");
@@ -321,26 +310,40 @@ function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: 
     <form onSubmit={handle} className="space-y-2">
       <div className="flex gap-1 flex-wrap">
         {TYPES.map((t) => (
-          <button key={t.value} type="button" onClick={() => setType(t.value)}
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => setType(t.value)}
             className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              type === t.value ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-white/10 text-gray-500 hover:text-gray-300"
-            }`}>
+              type === t.value
+                ? "border-violet-500 bg-violet-500/20 text-violet-300"
+                : "border-white/10 text-gray-500 hover:text-gray-300"
+            }`}
+          >
             {t.label}
           </button>
         ))}
       </div>
-      <textarea value={content} onChange={(e) => setContent(e.target.value)}
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
         placeholder={type === "FEEDBACK" ? "Escreva um feedback..." : type === "DIRECIONAMENTO" ? "Escreva um direcionamento..." : "Escreva uma observação..."}
         rows={4}
         className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/50 resize-none leading-relaxed"
       />
       <div className="flex gap-2">
-        <button type="button" onClick={onCancel}
-          className="flex-1 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors"
+        >
           Cancelar
         </button>
-        <button type="submit" disabled={submitting || !content.trim()}
-          className="flex-1 py-1.5 text-xs text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 rounded-lg transition-colors font-medium">
+        <button
+          type="submit"
+          disabled={submitting || !content.trim()}
+          className="flex-1 py-1.5 text-xs text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 rounded-lg transition-colors font-medium"
+        >
           {submitting ? "Enviando..." : "Enviar"}
         </button>
       </div>
@@ -348,74 +351,31 @@ function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: 
   );
 }
 
-/* ── Reply form (aluno, sem seletor de tipo) ── */
-function ReplyForm({ onSubmit, onCancel }: { onSubmit: (content: string) => Promise<boolean>; onCancel: () => void }) {
-  const [content, setContent] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handle(e: React.FormEvent) {
-    e.preventDefault();
-    if (!content.trim()) return;
-    setSubmitting(true);
-    const ok = await onSubmit(content);
-    setSubmitting(false);
-    if (ok) setContent("");
-  }
-
-  return (
-    <form onSubmit={handle} className="mt-2 space-y-2">
-      <textarea value={content} onChange={(e) => setContent(e.target.value)}
-        placeholder="Escreva sua resposta..."
-        autoFocus rows={3}
-        className="w-full bg-[#0d0d14] border border-emerald-500/20 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 resize-none leading-relaxed"
-      />
-      <div className="flex gap-2">
-        <button type="button" onClick={onCancel}
-          className="flex-1 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors">
-          Cancelar
-        </button>
-        <button type="submit" disabled={submitting || !content.trim()}
-          className="flex-1 py-1.5 text-xs text-white bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 rounded-lg transition-colors font-medium">
-          {submitting ? "Enviando..." : "Responder"}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-/* ── Comment card (with replies) ── */
+/* ── Comment card ── */
 function CommentCard({
-  c, currentUserId, currentUserRole, now,
-  editingId, editContent, editSaving, replyingToId,
-  onStartEdit, onEditChange, onSaveEdit, onCancelEdit,
-  onStartReply, onCancelReply, onDelete, onSubmitReply,
+  c, currentUserId, currentUserRole, now, onDelete, onViewVideo,
+  editingId, editContent, editSaving, onStartEdit, onEditChange, onSaveEdit, onCancelEdit,
 }: {
   c: Comment;
   currentUserId: string;
   currentUserRole: string;
   now: number;
-  editingId: string | null;
-  editContent: string;
-  editSaving: boolean;
-  replyingToId: string | null;
-  onStartEdit: (id: string, content: string) => void;
-  onEditChange: (v: string) => void;
-  onSaveEdit: (id: string) => void;
-  onCancelEdit: () => void;
-  onStartReply: (id: string) => void;
-  onCancelReply: () => void;
-  onDelete: () => void;
-  onSubmitReply: (content: string) => Promise<boolean>;
+  onDelete: (id: string) => void;
+  onViewVideo?: () => void;
+  editingId?: string | null;
+  editContent?: string;
+  editSaving?: boolean;
+  onStartEdit?: (id: string, content: string) => void;
+  onEditChange?: (v: string) => void;
+  onSaveEdit?: (id: string) => void;
+  onCancelEdit?: () => void;
 }) {
   const { label, color } = commentTypeLabel(c.type);
   const isEditing = editingId === c.id;
   const isOwn = c.author.id === currentUserId;
-  const isShowingReplyForm = replyingToId === c.id;
-  const isMentorOrAdmin = currentUserRole === "ADMIN" || currentUserRole === "MENTOR";
 
   return (
     <div className="bg-[#13131e] border border-white/5 rounded-lg p-3 space-y-2">
-      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           {c.author.avatarUrl ? (
@@ -436,7 +396,7 @@ function CommentCard({
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-xs text-gray-600">{timeAgo(c.createdAt, now)}</span>
-          {isOwn && isMentorOrAdmin && !isEditing && (
+          {isOwn && !isEditing && onStartEdit && (
             <button onClick={() => onStartEdit(c.id, c.content)}
               className="text-gray-700 hover:text-violet-400 transition-colors" title="Editar">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -444,18 +404,20 @@ function CommentCard({
               </svg>
             </button>
           )}
-          {isMentorOrAdmin && (
-            <button onClick={onDelete} className="text-gray-700 hover:text-red-400 text-xs transition-colors">✕</button>
+          {(currentUserRole === "ADMIN" || currentUserRole === "MENTOR" || isOwn) && !isEditing && (
+            <button onClick={() => onDelete(c.id)} className="text-gray-700 hover:text-red-400 text-xs transition-colors">✕</button>
           )}
         </div>
       </div>
 
-      {/* Conteúdo / edição */}
-      {isEditing ? (
+      {isEditing && onEditChange && onSaveEdit && onCancelEdit ? (
         <div className="space-y-2">
-          <textarea value={editContent} onChange={(e) => onEditChange(e.target.value)}
-            autoFocus rows={4}
-            className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-violet-500/50 resize-none leading-relaxed"
+          <textarea
+            value={editContent ?? ""}
+            onChange={(e) => onEditChange(e.target.value)}
+            autoFocus
+            rows={4}
+            className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/50 resize-none leading-relaxed"
           />
           <div className="flex gap-2">
             <button onClick={onCancelEdit}
@@ -472,113 +434,21 @@ function CommentCard({
         <p className="text-sm text-gray-200 leading-relaxed">{c.content}</p>
       )}
 
-      {/* Replies */}
-      {c.replies.length > 0 && (
-        <div className="mt-2 pl-3 border-l border-white/8 space-y-2">
-          {c.replies.map((r) => (
-            <ReplyCard
-              key={r.id}
-              r={r}
-              currentUserId={currentUserId}
-              now={now}
-              editingId={editingId}
-              editContent={editContent}
-              editSaving={editSaving}
-              onStartEdit={onStartEdit}
-              onEditChange={onEditChange}
-              onSaveEdit={onSaveEdit}
-              onCancelEdit={onCancelEdit}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Reply form */}
-      {isShowingReplyForm ? (
-        <ReplyForm onSubmit={onSubmitReply} onCancel={onCancelReply} />
-      ) : (
-        !isEditing && (
-          <button onClick={() => onStartReply(c.id)}
-            className="flex items-center gap-1 text-xs text-gray-600 hover:text-emerald-400 transition-colors mt-1">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+      {onViewVideo && (
+        <div className="pt-1 border-t border-white/5 space-y-1.5">
+          {c.video?.title && (
+            <p className="text-xs text-gray-500 line-clamp-2 leading-snug">{c.video.title}</p>
+          )}
+          <button
+            onClick={onViewVideo}
+            className="inline-flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors font-medium"
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
             </svg>
-            Responder
+            Ver vídeo
           </button>
-        )
-      )}
-    </div>
-  );
-}
-
-/* ── Reply card ── */
-function ReplyCard({
-  r, currentUserId, now,
-  editingId, editContent, editSaving,
-  onStartEdit, onEditChange, onSaveEdit, onCancelEdit,
-}: {
-  r: Reply;
-  currentUserId: string;
-  now: number;
-  editingId: string | null;
-  editContent: string;
-  editSaving: boolean;
-  onStartEdit: (id: string, content: string) => void;
-  onEditChange: (v: string) => void;
-  onSaveEdit: (id: string) => void;
-  onCancelEdit: () => void;
-}) {
-  const { label, color } = commentTypeLabel(r.type);
-  const isEditing = editingId === r.id;
-  const isOwn = r.author.id === currentUserId;
-
-  return (
-    <div className="bg-[#0f0f1a] rounded-md p-2.5 space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          {r.author.avatarUrl ? (
-            <img src={r.author.avatarUrl} alt={r.author.name} referrerPolicy="no-referrer"
-              className="w-4 h-4 rounded-full object-cover flex-shrink-0" />
-          ) : (
-            <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs text-emerald-300 flex-shrink-0 font-medium">
-              {r.author.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <span className="text-xs text-gray-400 font-medium">{r.author.name}</span>
-          <span className={`text-xs font-medium px-1.5 rounded-full border ${color}`}>{label}</span>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-xs text-gray-700">{timeAgo(r.createdAt, now)}</span>
-          {isOwn && !isEditing && (
-            <button onClick={() => onStartEdit(r.id, r.content)}
-              className="text-gray-700 hover:text-emerald-400 transition-colors" title="Editar resposta">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {isEditing ? (
-        <div className="space-y-1.5">
-          <textarea value={editContent} onChange={(e) => onEditChange(e.target.value)}
-            autoFocus rows={3}
-            className="w-full bg-[#0d0d14] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-emerald-500/50 resize-none leading-relaxed"
-          />
-          <div className="flex gap-2">
-            <button onClick={onCancelEdit}
-              className="flex-1 py-1 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-md transition-colors">
-              Cancelar
-            </button>
-            <button onClick={() => onSaveEdit(r.id)} disabled={editSaving}
-              className="flex-1 py-1 text-xs text-white bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 rounded-md transition-colors font-medium">
-              {editSaving ? "Salvando..." : "Salvar"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className="text-xs text-gray-300 leading-relaxed">{r.content}</p>
       )}
     </div>
   );
