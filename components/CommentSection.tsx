@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { commentTypeLabel, timeAgo } from "@/lib/utils";
 
+const CONTENT_PREVIEW_LIMIT = 220;
+
 interface Video { id: string; title: string }
 
 interface Comment {
@@ -373,6 +375,10 @@ function CommentCard({
   const { label, color } = commentTypeLabel(c.type);
   const isEditing = editingId === c.id;
   const isOwn = c.author.id === currentUserId;
+  const [contentModalOpen, setContentModalOpen] = useState(false);
+  const normalized = c.content.replace(/\n+/g, " ").trim();
+  const isTruncatable = normalized.length > CONTENT_PREVIEW_LIMIT;
+  const displayContent = isTruncatable ? normalized.slice(0, CONTENT_PREVIEW_LIMIT).trimEnd() + "…" : normalized;
 
   return (
     <div className="bg-[#13131e] border border-white/5 rounded-lg p-3 space-y-2">
@@ -431,7 +437,45 @@ function CommentCard({
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-200 leading-relaxed pl-7 text-justify">{c.content}</p>
+        <div className="pl-7">
+          <p className="text-sm text-gray-200 leading-relaxed">{displayContent}</p>
+          {isTruncatable && (
+            <button onClick={() => setContentModalOpen(true)}
+              className="mt-1 text-xs text-violet-400 hover:text-violet-300 transition-colors font-medium">
+              Ver tudo ↓
+            </button>
+          )}
+        </div>
+      )}
+
+      {contentModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-xl bg-[#13131e] border border-white/10 rounded-2xl shadow-2xl flex flex-col gap-4 p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {c.author.avatarUrl ? (
+                  <img src={c.author.avatarUrl} alt={c.author.name} referrerPolicy="no-referrer"
+                    className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-xs text-violet-300 flex-shrink-0 font-medium">
+                    {c.author.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-sm font-semibold text-white truncate">{c.author.name}</span>
+                <span className={`text-xs font-medium px-1.5 rounded-full border flex-shrink-0 ${color}`}>{label}</span>
+              </div>
+              <button onClick={() => setContentModalOpen(false)}
+                className="ml-auto text-gray-600 hover:text-gray-300 transition-colors flex-shrink-0">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto">
+              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap break-words">{c.content}</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {onViewVideo && (

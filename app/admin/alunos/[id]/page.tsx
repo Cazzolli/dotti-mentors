@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import ChannelCard from "@/components/ChannelCard";
+import MentorIdeaSection from "@/components/MentorIdeaSection";
 
 interface Channel {
   id: string;
@@ -65,6 +66,7 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
   if (status !== "authenticated" || loading) return null;
 
   const role = (session?.user as any)?.role ?? "STUDENT";
+  const currentUserId = (session?.user as any)?.id ?? "";
   const isAdmin = role === "ADMIN";
   const channelToDelete = channels.find((c) => c.id === confirmDeleteChannelId);
 
@@ -126,6 +128,14 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
               ))}
             </div>
           )}
+
+          <div className="border-t border-white/5 pt-6">
+            <MentorIdeaSection
+              studentId={id}
+              currentUserId={currentUserId}
+              currentUserRole={role}
+            />
+          </div>
         </div>
       </main>
 
