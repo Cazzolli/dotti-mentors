@@ -415,7 +415,7 @@ function FeedbackCard({
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap break-words">{c.content}</p>
+        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap break-words pl-8">{c.content}</p>
       )}
 
       {/* Modal de ideia do canal */}
