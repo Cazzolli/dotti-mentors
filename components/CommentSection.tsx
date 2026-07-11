@@ -431,7 +431,7 @@ function CommentCard({
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-200 leading-relaxed pl-7 text-justify">{c.content}</p>
+        <p className="text-sm text-gray-200 leading-relaxed pl-7">{c.content}</p>
       )}
 
       {onViewVideo && (

@@ -225,7 +225,7 @@ export default function MentorIdeaSection({ studentId, currentUserId, currentUse
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-200 leading-relaxed pl-8 text-justify whitespace-pre-wrap">
+                  <p className="text-sm text-gray-200 leading-relaxed pl-8 whitespace-pre-wrap">
                     {renderWithLinks(idea.content)}
                   </p>
                 )}
