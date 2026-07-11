@@ -376,8 +376,9 @@ function CommentCard({
   const isEditing = editingId === c.id;
   const isOwn = c.author.id === currentUserId;
   const [contentModalOpen, setContentModalOpen] = useState(false);
-  const isTruncatable = c.content.length > CONTENT_PREVIEW_LIMIT;
-  const displayContent = isTruncatable ? c.content.slice(0, CONTENT_PREVIEW_LIMIT).trimEnd() + "…" : c.content;
+  const normalized = c.content.replace(/\n+/g, " ").trim();
+  const isTruncatable = normalized.length > CONTENT_PREVIEW_LIMIT;
+  const displayContent = isTruncatable ? normalized.slice(0, CONTENT_PREVIEW_LIMIT).trimEnd() + "…" : normalized;
 
   return (
     <div className="bg-[#13131e] border border-white/5 rounded-lg p-3 space-y-2">

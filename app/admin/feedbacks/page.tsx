@@ -306,8 +306,9 @@ function FeedbackCard({
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [contentModalOpen, setContentModalOpen] = useState(false);
   const PREVIEW_LIMIT = 220;
-  const isTruncatable = c.content.length > PREVIEW_LIMIT;
-  const displayContent = isTruncatable ? c.content.slice(0, PREVIEW_LIMIT).trimEnd() + "…" : c.content;
+  const normalized = c.content.replace(/\n+/g, " ").trim();
+  const isTruncatable = normalized.length > PREVIEW_LIMIT;
+  const displayContent = isTruncatable ? normalized.slice(0, PREVIEW_LIMIT).trimEnd() + "…" : normalized;
 
   return (
     <div className="bg-[#13131e] border border-white/5 rounded-xl p-4 space-y-3">
