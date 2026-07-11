@@ -33,13 +33,6 @@ export async function GET() {
           student: { select: { name: true } },
         },
       },
-      mentorIdea: {
-        select: {
-          id: true,
-          content: true,
-          author: { select: { name: true, avatarUrl: true } },
-        },
-      },
     },
   });
 

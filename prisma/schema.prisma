@@ -20,8 +20,6 @@ model User {
   comments      Comment[]
   notifications Notification[]
   sentInvites   Invite[]       @relation("InviteCreator")
-  mentorIdeas   MentorIdea[]   @relation("MentorIdeaAuthor")
-  receivedIdeas MentorIdea[]   @relation("MentorIdeaStudent")
 }
 
 enum Role {
@@ -98,27 +96,11 @@ model Notification {
   // NEW_CHANNEL notifications
   channelId    String?
   channel      Channel?         @relation("ChannelNotifications", fields: [channelId], references: [id], onDelete: Cascade)
-  // MENTOR_IDEA notifications
-  mentorIdeaId String?
-  mentorIdea   MentorIdea?      @relation(fields: [mentorIdeaId], references: [id], onDelete: Cascade)
 }
 
 enum NotificationType {
   FEEDBACK
   NEW_CHANNEL
-  MENTOR_IDEA
-}
-
-model MentorIdea {
-  id            String         @id @default(cuid())
-  content       String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  authorId      String
-  author        User           @relation("MentorIdeaAuthor", fields: [authorId], references: [id])
-  studentId     String
-  student       User           @relation("MentorIdeaStudent", fields: [studentId], references: [id])
-  notifications Notification[]
 }
 
 enum CommentType {

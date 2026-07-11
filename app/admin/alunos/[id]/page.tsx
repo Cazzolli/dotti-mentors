@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import ChannelCard from "@/components/ChannelCard";
-import MentorIdeaSection from "@/components/MentorIdeaSection";
 
 interface Channel {
   id: string;
@@ -129,13 +128,6 @@ export default function AlunoPage({ params }: { params: Promise<{ id: string }> 
             </div>
           )}
 
-          <div className="border-t border-white/5 pt-6">
-            <MentorIdeaSection
-              studentId={id}
-              currentUserId={currentUserId}
-              currentUserRole={role}
-            />
-          </div>
         </div>
       </main>
 
