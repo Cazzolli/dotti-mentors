@@ -40,6 +40,9 @@ export default function CommentSection({
   const [videoOpen, setVideoOpen] = useState(!!videoId);
   const [channelFormOpen, setChannelFormOpen] = useState(false);
   const [videoFormOpen, setVideoFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const now = Date.now();
 
   useEffect(() => {
@@ -90,6 +93,23 @@ export default function CommentSection({
     return true;
   }
 
+  async function handleEdit(id: string) {
+    if (!editContent.trim()) return;
+    setEditSaving(true);
+    const res = await fetch(`/api/comments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: editContent }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setChannelComments((prev) => prev.map((c) => c.id === id ? { ...c, content: updated.content } : c));
+      setVideoComments((prev) => prev.map((c) => c.id === id ? { ...c, content: updated.content } : c));
+      setEditingId(null);
+    }
+    setEditSaving(false);
+  }
+
   async function handleDelete(id: string, target: "channel" | "video") {
     if (!confirm("Excluir este comentário?")) return;
     const res = await fetch(`/api/comments/${id}`, { method: "DELETE" });
@@ -135,6 +155,13 @@ export default function CommentSection({
                 currentUserRole={currentUserRole}
                 now={now}
                 onDelete={(id) => handleDelete(id, "channel")}
+                editingId={editingId}
+                editContent={editContent}
+                editSaving={editSaving}
+                onStartEdit={(id, content) => { setEditingId(id); setEditContent(content); }}
+                onEditChange={setEditContent}
+                onSaveEdit={handleEdit}
+                onCancelEdit={() => setEditingId(null)}
               />
             ))}
           </div>
@@ -173,6 +200,13 @@ export default function CommentSection({
                 currentUserRole={currentUserRole}
                 now={now}
                 onDelete={(id) => handleDelete(id, "video")}
+                editingId={editingId}
+                editContent={editContent}
+                editSaving={editSaving}
+                onStartEdit={(id, content) => { setEditingId(id); setEditContent(content); }}
+                onEditChange={setEditContent}
+                onSaveEdit={handleEdit}
+                onCancelEdit={() => setEditingId(null)}
               />
             ))}
           </div>
@@ -320,6 +354,7 @@ function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: 
 /* ── Comment card ── */
 function CommentCard({
   c, currentUserId, currentUserRole, now, onDelete, onViewVideo,
+  editingId, editContent, editSaving, onStartEdit, onEditChange, onSaveEdit, onCancelEdit,
 }: {
   c: Comment;
   currentUserId: string;
@@ -327,8 +362,18 @@ function CommentCard({
   now: number;
   onDelete: (id: string) => void;
   onViewVideo?: () => void;
+  editingId?: string | null;
+  editContent?: string;
+  editSaving?: boolean;
+  onStartEdit?: (id: string, content: string) => void;
+  onEditChange?: (v: string) => void;
+  onSaveEdit?: (id: string) => void;
+  onCancelEdit?: () => void;
 }) {
   const { label, color } = commentTypeLabel(c.type);
+  const isEditing = editingId === c.id;
+  const isOwn = c.author.id === currentUserId;
+
   return (
     <div className="bg-[#13131e] border border-white/5 rounded-lg p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
@@ -351,12 +396,44 @@ function CommentCard({
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-xs text-gray-600">{timeAgo(c.createdAt, now)}</span>
-          {(currentUserRole === "ADMIN" || currentUserRole === "MENTOR" || c.author.id === currentUserId) && (
+          {isOwn && !isEditing && onStartEdit && (
+            <button onClick={() => onStartEdit(c.id, c.content)}
+              className="text-gray-700 hover:text-violet-400 transition-colors" title="Editar">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          )}
+          {(currentUserRole === "ADMIN" || currentUserRole === "MENTOR" || isOwn) && !isEditing && (
             <button onClick={() => onDelete(c.id)} className="text-gray-700 hover:text-red-400 text-xs transition-colors">✕</button>
           )}
         </div>
       </div>
-      <p className="text-sm text-gray-200 leading-relaxed">{c.content}</p>
+
+      {isEditing && onEditChange && onSaveEdit && onCancelEdit ? (
+        <div className="space-y-2">
+          <textarea
+            value={editContent ?? ""}
+            onChange={(e) => onEditChange(e.target.value)}
+            autoFocus
+            rows={4}
+            className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/50 resize-none leading-relaxed"
+          />
+          <div className="flex gap-2">
+            <button onClick={onCancelEdit}
+              className="flex-1 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors">
+              Cancelar
+            </button>
+            <button onClick={() => onSaveEdit(c.id)} disabled={editSaving}
+              className="flex-1 py-1.5 text-xs text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 rounded-lg transition-colors font-medium">
+              {editSaving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-200 leading-relaxed">{c.content}</p>
+      )}
+
       {onViewVideo && (
         <div className="pt-1 border-t border-white/5 space-y-1.5">
           {c.video?.title && (
