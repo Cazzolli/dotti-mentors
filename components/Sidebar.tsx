@@ -34,6 +34,7 @@ export default function Sidebar({ role, userName }: Props) {
   const adminLinks = [
     { href: "/admin/alunos", label: "Alunos", icon: "◎" },
     { href: "/admin/visao-geral", label: "Visão Geral", icon: "⊞" },
+    { href: "/admin/feedbacks", label: "Central de Feedbacks", icon: "💬" },
   ];
   const studentLinks = [
     { href: "/dashboard", label: "Meus Canais", icon: "⊞" },

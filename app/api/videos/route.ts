@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   const [total, items] = await Promise.all([
     db.video.count({ where }),
-    db.video.findMany({ where, orderBy, skip: offset, take: limit }),
+    db.video.findMany({ where, orderBy, skip: offset, take: limit, include: { _count: { select: { comments: true } } } }),
   ]);
 
   return NextResponse.json({ total, items });

@@ -123,7 +123,6 @@ export default function ChannelIdea({ channelId, initialIdea, isOwner, className
       {viewModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setViewModalOpen(false); }}
         >
           <div className="w-full max-w-xl bg-[#13131e] border border-white/10 rounded-2xl shadow-2xl flex flex-col gap-4 p-6">
             <div className="flex items-center gap-2">
@@ -157,7 +156,6 @@ export default function ChannelIdea({ channelId, initialIdea, isOwner, className
       {isOwner && modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) handleCancel(); }}
         >
           <div className="w-full max-w-xl bg-[#13131e] border border-white/10 rounded-2xl shadow-2xl flex flex-col gap-4 p-6">
             {/* Header */}

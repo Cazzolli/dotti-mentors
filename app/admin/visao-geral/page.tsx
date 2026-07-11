@@ -21,6 +21,7 @@ interface VideoItem {
   outlierScore: number;
   videoIdea?: string | null;
   videoLinks?: string | null;
+  _count?: { comments: number };
   channel: {
     id: string;
     name: string;
@@ -201,7 +202,7 @@ function OverviewVideoCard({ video, now }: { video: VideoItem; now: number }) {
           </span>
         </div>
 
-        {/* Stats + ícone ideia */}
+        {/* Stats + ícones */}
         <div className="flex items-center justify-between text-xs text-gray-600">
           <div className="flex items-center gap-2">
             <span>👁 {formatViews(video.views)}</span>
@@ -209,6 +210,14 @@ function OverviewVideoCard({ video, now }: { video: VideoItem; now: number }) {
           </div>
           <div className="flex items-center gap-2">
             <span>{video.publishedAt ? timeAgo(video.publishedAt, now) : ""}</span>
+            {(video._count?.comments ?? 0) > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400">
+                <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Comentário
+              </span>
+            )}
             <button
               onClick={() => hasIdea && setModalOpen(true)}
               disabled={!hasIdea}

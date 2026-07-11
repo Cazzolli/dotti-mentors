@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const user = session.user as any;
-  const { name, avatarUrl, currentPassword, newPassword, blocked } = await req.json();
+  const { name, email, avatarUrl, currentPassword, newPassword, blocked } = await req.json();
 
   // block/unblock — ADMIN only, can target other users
   if (blocked !== undefined) {
@@ -39,6 +39,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       where: { id },
       data: { blocked: Boolean(blocked) },
       select: { id: true, blocked: true },
+    });
+    return NextResponse.json(updated);
+  }
+
+  // admin editing another user's profile (name, email, password) — no current password needed
+  if (user.role === "ADMIN" && user.id !== id) {
+    const target = await db.user.findUnique({ where: { id }, select: { role: true } });
+    if (!target) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    if (target.role === "ADMIN") return NextResponse.json({ error: "Não é possível editar outro administrador" }, { status: 403 });
+
+    const data: any = {};
+    if (name?.trim()) data.name = name.trim();
+    if (email?.trim()) {
+      const exists = await db.user.findFirst({ where: { email: email.trim(), NOT: { id } } });
+      if (exists) return NextResponse.json({ error: "E-mail já está em uso" }, { status: 409 });
+      data.email = email.trim();
+    }
+    if (newPassword) {
+      if (newPassword.length < 6 || newPassword.length > 128)
+        return NextResponse.json({ error: "Senha deve ter entre 6 e 128 caracteres" }, { status: 400 });
+      data.passwordHash = await bcrypt.hash(newPassword, 12);
+    }
+
+    const updated = await db.user.update({
+      where: { id },
+      data,
+      select: { id: true, name: true, email: true, avatarUrl: true, role: true },
     });
     return NextResponse.json(updated);
   }

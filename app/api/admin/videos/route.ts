@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
       skip: offset,
       take: limit,
       include: {
+        _count: { select: { comments: true } },
         channel: {
           select: {
             id: true,

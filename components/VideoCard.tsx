@@ -132,11 +132,12 @@ interface Props {
   onSelect?: (videoId: string) => void;
   selected?: boolean;
   hasUnreadFeedback?: boolean;
+  hasFeedback?: boolean;
   isOwner?: boolean;
   onIdeaChange?: (videoId: string, idea: string, links: RefLink[]) => void;
 }
 
-export default function VideoCard({ video, now, onSelect, selected, hasUnreadFeedback, isOwner, onIdeaChange }: Props) {
+export default function VideoCard({ video, now, onSelect, selected, hasUnreadFeedback, hasFeedback, isOwner, onIdeaChange }: Props) {
   const videoUrl = `https://youtube.com/watch?v=${video.youtubeVideoId}`;
 
   const [idea, setIdea] = useState(video.videoIdea ?? "");
@@ -266,6 +267,16 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
               YouTube
             </a>
 
+            <div className="flex items-center gap-1.5">
+              {hasFeedback && (
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Comentário
+                </span>
+              )}
+
             {isOwner ? (
               <button onClick={openEdit}
                 className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-colors ${
@@ -283,14 +294,14 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
                 Ver ideia
               </button>
             ) : null}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Modal de edição — aluno ── */}
       {isOwner && editModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setEditModalOpen(false); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-xl bg-[#13131e] border border-white/10 rounded-2xl shadow-2xl flex flex-col gap-4 p-6 max-h-[90vh] overflow-y-auto">
 
             <div className="flex items-center gap-2">
@@ -365,8 +376,7 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
 
       {/* ── Modal de leitura — mentor ── */}
       {!isOwner && viewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setViewModalOpen(false); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-xl bg-[#13131e] border border-white/10 rounded-2xl shadow-2xl flex flex-col gap-4 p-6 max-h-[90vh] overflow-y-auto">
 
             <div className="flex items-center gap-2">
