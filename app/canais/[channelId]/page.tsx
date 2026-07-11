@@ -322,7 +322,7 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
         <div className="flex-1 flex overflow-hidden">
 
           {/* Videos column */}
-          <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex-1 overflow-y-auto p-5" onClick={() => setSelectedVideoId(null)}>
             {/* Filter bar */}
             <div className="flex items-center gap-3 mb-5">
               <form onSubmit={handleSearchSubmit} className="flex gap-2 flex-1 max-w-sm">
@@ -370,8 +370,8 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {videos.map((v) => (
+                  <div key={v.id} onClick={(e) => e.stopPropagation()}>
                   <VideoCard
-                    key={v.id}
                     video={v}
                     now={now}
                     onSelect={(id) => {
@@ -389,6 +389,7 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
                       ))
                     }
                   />
+                  </div>
                 ))}
               </div>
             )}

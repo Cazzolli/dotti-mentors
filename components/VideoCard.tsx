@@ -237,20 +237,11 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
             </div>
           )}
 
-          <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
-            {hasFeedback && (
-              <div className="w-5 h-5 bg-violet-500/90 rounded-full flex items-center justify-center shadow-lg" title="Tem feedback">
-                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-            )}
-            {hasIdea && (
-              <div className="w-5 h-5 bg-amber-500/90 rounded-full flex items-center justify-center shadow-lg" title="Ideia do vídeo registrada">
-                <CompassIcon className="w-2.5 h-2.5 text-white" />
-              </div>
-            )}
-          </div>
+          {hasIdea && (
+            <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-amber-500/90 rounded-full flex items-center justify-center shadow-lg" title="Ideia do vídeo registrada">
+              <CompassIcon className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
         </div>
 
         <div className="p-3 space-y-2">
@@ -276,6 +267,18 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
               YouTube
             </a>
 
+            <div className="flex items-center gap-1.5">
+              <svg
+                className={`w-3.5 h-3.5 transition-colors ${hasFeedback ? "text-violet-400" : "text-gray-700"}`}
+                viewBox="0 0 24 24"
+                fill={hasFeedback ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth={hasFeedback ? 0 : 2}
+                title={hasFeedback ? "Tem feedback" : "Sem feedback"}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+
             {isOwner ? (
               <button onClick={openEdit}
                 className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-colors ${
@@ -293,6 +296,7 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
                 Ver ideia
               </button>
             ) : null}
+            </div>
           </div>
         </div>
       </div>
