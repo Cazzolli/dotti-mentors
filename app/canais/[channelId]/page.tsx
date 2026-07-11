@@ -37,6 +37,7 @@ interface Video {
   outlierScore: number;
   videoIdea?: string | null;
   videoLinks?: string | null;
+  _count?: { comments: number };
 }
 
 const SORT_OPTIONS = [
@@ -380,6 +381,7 @@ export default function CanalPage({ params }: { params: Promise<{ channelId: str
                     }}
                     selected={selectedVideoId === v.id}
                     hasUnreadFeedback={unreadVideoIds.has(v.id)}
+                    hasFeedback={(v._count?.comments ?? 0) > 0}
                     isOwner={isOwner}
                     onIdeaChange={(videoId, idea, links) =>
                       setVideos((prev) => prev.map((x) =>

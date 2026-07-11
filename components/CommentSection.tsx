@@ -44,12 +44,16 @@ export default function CommentSection({
 
   useEffect(() => {
     loadChannelComments();
-    loadVideoComments();
     onViewed?.();
   }, [channelId]);
 
   useEffect(() => {
-    if (videoId) setVideoOpen(true);
+    if (videoId) {
+      setVideoOpen(true);
+      loadVideoComments(videoId);
+    } else {
+      setVideoComments([]);
+    }
   }, [videoId]);
 
   async function loadChannelComments() {
@@ -57,8 +61,8 @@ export default function CommentSection({
     if (res.ok) setChannelComments(await res.json());
   }
 
-  async function loadVideoComments() {
-    const res = await fetch(`/api/comments?channelId=${channelId}&allVideos=true`);
+  async function loadVideoComments(vid: string) {
+    const res = await fetch(`/api/comments?channelId=${channelId}&videoId=${vid}`);
     if (res.ok) setVideoComments(await res.json());
   }
 
@@ -81,6 +85,7 @@ export default function CommentSection({
     } else {
       setVideoComments((prev) => [...prev, newComment]);
       setVideoFormOpen(false);
+      if (videoId) loadVideoComments(videoId);
     }
     return true;
   }
@@ -168,13 +173,6 @@ export default function CommentSection({
                 currentUserRole={currentUserRole}
                 now={now}
                 onDelete={(id) => handleDelete(id, "video")}
-                onViewVideo={c.video ? () => {
-                  const el = document.getElementById(`video-card-${c.video!.id}`);
-                  if (!el) return;
-                  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                  el.classList.add("ring-2", "ring-violet-400", "ring-offset-1", "ring-offset-black");
-                  setTimeout(() => el.classList.remove("ring-2", "ring-violet-400", "ring-offset-1", "ring-offset-black"), 1500);
-                } : undefined}
               />
             ))}
           </div>

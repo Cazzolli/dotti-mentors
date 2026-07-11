@@ -21,6 +21,7 @@ interface VideoItem {
   outlierScore: number;
   videoIdea?: string | null;
   videoLinks?: string | null;
+  _count?: { comments: number };
   channel: {
     id: string;
     name: string;
@@ -174,6 +175,13 @@ function OverviewVideoCard({ video, now }: { video: VideoItem; now: number }) {
         <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded font-mono">
           {video.isShort ? <span className="text-red-400 font-semibold">#Short</span> : formatDuration(video.durationSeconds)}
         </div>
+        {(video._count?.comments ?? 0) > 0 && (
+          <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-violet-500/90 rounded-full flex items-center justify-center shadow-lg" title="Tem feedback">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+        )}
       </Link>
 
       <div className="p-3 flex flex-col gap-2 flex-1">
