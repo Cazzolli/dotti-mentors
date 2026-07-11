@@ -23,11 +23,10 @@ const PERIODS = [
   { value: "90d", label: "90d" },
 ];
 
-const TYPES = [
-  { value: "", label: "Todos" },
-  { value: "FEEDBACK", label: "Feedback" },
-  { value: "DIRECIONAMENTO", label: "Direcionamento" },
-  { value: "OBSERVACAO", label: "Observação" },
+const SCOPES = [
+  { value: "all", label: "Todos" },
+  { value: "channel", label: "Feedback Canal" },
+  { value: "video", label: "Feedback Vídeos" },
 ];
 
 export default function FeedbacksPage() {
@@ -39,7 +38,7 @@ export default function FeedbacksPage() {
   const [loading, setLoading] = useState(true);
 
   const [period, setPeriod] = useState("all");
-  const [type, setType] = useState("");
+  const [scope, setScope] = useState("all");
   const [mentorInput, setMentorInput] = useState("");
   const [mentorFilter, setMentorFilter] = useState("");
   const [studentInput, setStudentInput] = useState("");
@@ -60,19 +59,21 @@ export default function FeedbacksPage() {
   const loadFeedbacks = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ period });
-    if (type) params.set("type", type);
     if (mentorFilter) params.set("mentorName", mentorFilter);
     if (studentFilter) params.set("studentName", studentFilter);
 
+    const fetchChannel = scope === "all" || scope === "channel";
+    const fetchVideo = scope === "all" || scope === "video";
+
     const [chanRes, vidRes] = await Promise.all([
-      fetch(`/api/admin/feedbacks?${params}&scope=channel`),
-      fetch(`/api/admin/feedbacks?${params}&scope=video`),
+      fetchChannel ? fetch(`/api/admin/feedbacks?${params}&scope=channel`) : Promise.resolve(null),
+      fetchVideo ? fetch(`/api/admin/feedbacks?${params}&scope=video`) : Promise.resolve(null),
     ]);
 
-    if (chanRes.ok) setChannelFeedbacks(await chanRes.json());
-    if (vidRes.ok) setVideoFeedbacks(await vidRes.json());
+    if (chanRes?.ok) setChannelFeedbacks(await chanRes.json()); else if (!fetchChannel) setChannelFeedbacks([]);
+    if (vidRes?.ok) setVideoFeedbacks(await vidRes.json()); else if (!fetchVideo) setVideoFeedbacks([]);
     setLoading(false);
-  }, [period, type, mentorFilter, studentFilter]);
+  }, [period, scope, mentorFilter, studentFilter]);
 
   useEffect(() => {
     if (status === "authenticated") loadFeedbacks();
@@ -100,11 +101,11 @@ export default function FeedbacksPage() {
     setEditContent(c.content);
   }
 
-  const hasFilters = period !== "all" || type !== "" || mentorFilter !== "" || studentFilter !== "";
+  const hasFilters = period !== "all" || scope !== "all" || mentorFilter !== "" || studentFilter !== "";
 
   function clearFilters() {
     setPeriod("all");
-    setType("");
+    setScope("all");
     setMentorFilter(""); setMentorInput("");
     setStudentFilter(""); setStudentInput("");
   }
@@ -125,7 +126,7 @@ export default function FeedbacksPage() {
             <div>
               <h1 className="text-xl font-semibold text-white">Central de Feedbacks</h1>
               <p className="text-sm text-gray-500">
-                {channelFeedbacks.length + videoFeedbacks.length} feedbacks encontrados
+                {scope === "channel" ? channelFeedbacks.length : scope === "video" ? videoFeedbacks.length : channelFeedbacks.length + videoFeedbacks.length} feedbacks encontrados
               </p>
             </div>
 
@@ -142,14 +143,14 @@ export default function FeedbacksPage() {
                 ))}
               </div>
 
-              {/* Tipo */}
+              {/* Escopo */}
               <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1">
-                {TYPES.map((t) => (
-                  <button key={t.value} onClick={() => setType(t.value)}
+                {SCOPES.map((s) => (
+                  <button key={s.value} onClick={() => setScope(s.value)}
                     className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
-                      type === t.value ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"
+                      scope === s.value ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"
                     }`}>
-                    {t.label}
+                    {s.label}
                   </button>
                 ))}
               </div>
@@ -202,7 +203,7 @@ export default function FeedbacksPage() {
           <div className="p-6 space-y-10 max-w-5xl mx-auto">
 
             {/* Feedbacks de Canal */}
-            <Section
+            {(scope === "all" || scope === "channel") && <Section
               title="Feedbacks de Canal"
               icon={
                 <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
@@ -228,10 +229,10 @@ export default function FeedbacksPage() {
                   onNavigate={() => router.push(`/canais/${c.channel.id}?feedback=channel`)}
                 />
               ))}
-            </Section>
+            </Section>}
 
             {/* Feedbacks de Vídeo */}
-            <Section
+            {(scope === "all" || scope === "video") && <Section
               title="Feedbacks de Vídeo"
               icon={
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -257,7 +258,7 @@ export default function FeedbacksPage() {
                   onNavigate={() => router.push(`/canais/${c.channel.id}?videoId=${c.video?.id}`)}
                 />
               ))}
-            </Section>
+            </Section>}
 
           </div>
         )}
