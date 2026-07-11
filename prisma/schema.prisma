@@ -81,6 +81,9 @@ model Comment {
   content       String
   createdAt     DateTime       @default(now())
   notifications Notification[]
+  parentId      String?
+  parent        Comment?       @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]      @relation("Replies")
 }
 
 model Notification {
@@ -107,6 +110,7 @@ enum CommentType {
   FEEDBACK
   DIRECIONAMENTO
   OBSERVACAO
+  RESPOSTA
 }
 
 model Invite {
