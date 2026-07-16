@@ -12,7 +12,7 @@ interface Student {
   name: string;
   email: string;
   blocked: boolean;
-  channels: { id: string }[];
+  channels: { id: string; _count: { comments: number } }[];
 }
 
 export default function AlunosPage() {
@@ -119,7 +119,9 @@ export default function AlunosPage() {
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4">
-              {filtered.map((student) => (
+              {filtered.map((student) => {
+                const feedbackCount = student.channels.reduce((sum, c) => sum + c._count.comments, 0);
+                return (
                 <div key={student.id} className="relative group">
                   <Link
                     href={`/admin/alunos/${student.id}`}
@@ -140,9 +142,15 @@ export default function AlunosPage() {
                         <p className="text-xs text-gray-600 truncate">{student.email}</p>
                       </div>
                     </div>
-                    <div className="bg-white/5 rounded-lg px-3 py-2 text-center">
-                      <p className="text-lg font-semibold text-gray-200">{student.channels.length}</p>
-                      <p className="text-xs text-gray-500">{student.channels.length !== 1 ? "canais" : "canal"}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white/5 rounded-lg px-3 py-2 text-center">
+                        <p className="text-lg font-semibold text-gray-200">{student.channels.length}</p>
+                        <p className="text-xs text-gray-500">{student.channels.length !== 1 ? "canais" : "canal"}</p>
+                      </div>
+                      <div className="bg-white/5 rounded-lg px-3 py-2 text-center">
+                        <p className="text-lg font-semibold text-gray-200">{feedbackCount}</p>
+                        <p className="text-xs text-gray-500">{feedbackCount !== 1 ? "feedbacks" : "feedback"}</p>
+                      </div>
                     </div>
                     {student.blocked && (
                       <div className="mt-2 flex items-center gap-1.5 text-xs text-red-400">
@@ -189,7 +197,7 @@ export default function AlunosPage() {
                     </div>
                   )}
                 </div>
-              ))}
+              );})}
             </div>
           )}
         </div>

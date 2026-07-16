@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { commentTypeLabel, timeAgo } from "@/lib/utils";
+import { timeAgo } from "@/lib/utils";
 
 interface FeedbackComment {
   id: string;
@@ -299,7 +299,6 @@ function FeedbackCard({
   onCancelEdit: () => void;
   onNavigate: () => void;
 }) {
-  const { label, color } = commentTypeLabel(c.type);
   const isEditing = editingId === c.id;
   const isOwn = c.author.id === currentUserId;
   const isVideo = c.videoId !== null;
@@ -325,7 +324,6 @@ function FeedbackCard({
           )}
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             <span className="text-sm font-medium text-white">{c.author.name}</span>
-            <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full border ${color}`}>{label}</span>
             <span className="text-xs text-gray-600">{timeAgo(c.createdAt)}</span>
           </div>
         </div>
@@ -445,7 +443,6 @@ function FeedbackCard({
                   </div>
                 )}
                 <span className="text-sm font-semibold text-white truncate">{c.author.name}</span>
-                <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full border flex-shrink-0 ${color}`}>{label}</span>
               </div>
               <button onClick={() => setContentModalOpen(false)}
                 className="ml-auto text-gray-600 hover:text-gray-300 transition-colors flex-shrink-0">

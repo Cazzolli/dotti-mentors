@@ -206,7 +206,6 @@ function OverviewVideoCard({ video, now }: { video: VideoItem; now: number }) {
         <div className="flex items-center justify-between text-xs text-gray-600">
           <div className="flex items-center gap-2">
             <span>👁 {formatViews(video.views)}</span>
-            <span>👍 {formatViews(video.likes)}</span>
           </div>
           <div className="flex items-center gap-2">
             <span>{video.publishedAt ? timeAgo(video.publishedAt, now) : ""}</span>

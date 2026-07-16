@@ -21,7 +21,7 @@ export async function GET() {
       email: true,
       blocked: true,
       channels: {
-        select: { id: true },
+        select: { id: true, _count: { select: { comments: true } } },
         orderBy: { createdAt: "desc" },
       },
     },
