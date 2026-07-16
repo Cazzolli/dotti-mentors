@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
+import CharCounter from "./CharCounter";
 
 const PREVIEW_LIMIT = 220;
+const IDEA_MAX_LENGTH = 2000;
 
 function renderTextWithLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -184,12 +186,14 @@ export default function ChannelIdea({ channelId, initialIdea, isOwner, className
 
             <textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => setDraft(e.target.value.slice(0, IDEA_MAX_LENGTH))}
               autoFocus
               rows={10}
+              maxLength={IDEA_MAX_LENGTH}
               placeholder={`Ex: Estou modelando o @mkbhd e @unboxtherapy. Ideia de nicho: tech reviews em português com foco em custo-benefício.\n\nhttps://youtube.com/@mkbhd`}
               className="w-full bg-[#0d0d14] border border-white/10 focus:border-amber-500/40 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none resize-none leading-relaxed"
             />
+            <CharCounter current={draft.length} max={IDEA_MAX_LENGTH} />
 
             <div className="flex items-center gap-2 justify-end">
               <button

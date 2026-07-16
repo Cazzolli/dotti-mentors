@@ -42,6 +42,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { channelIdea } = await req.json();
+  if (typeof channelIdea === "string" && channelIdea.length > 2000) {
+    return NextResponse.json({ error: "channelIdea too long" }, { status: 400 });
+  }
   const updated = await db.channel.update({
     where: { id },
     data: { channelIdea: channelIdea ?? null },
