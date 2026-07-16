@@ -252,7 +252,6 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
           <div className="flex items-center justify-between text-xs text-gray-600">
             <div className="flex items-center gap-3">
               <span>👁 {formatViews(video.views)}</span>
-              <span>👍 {formatViews(video.likes)}</span>
             </div>
             <span>{video.publishedAt ? timeAgo(video.publishedAt, now) : ""}</span>
           </div>

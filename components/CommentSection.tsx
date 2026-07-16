@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { commentTypeLabel, timeAgo } from "@/lib/utils";
+import { timeAgo } from "@/lib/utils";
 
 const CONTENT_PREVIEW_LIMIT = 220;
 
@@ -26,12 +26,6 @@ interface Props {
   onViewed?: () => void;
   autoOpenChannel?: boolean;
 }
-
-const TYPES = [
-  { value: "FEEDBACK", label: "Feedback" },
-  { value: "DIRECIONAMENTO", label: "Direcionamento" },
-  { value: "OBSERVACAO", label: "Observação" },
-];
 
 export default function CommentSection({
   channelId, videoId, videoTitle, videoYoutubeId, currentUserId, currentUserRole, onViewed, autoOpenChannel,
@@ -295,7 +289,6 @@ function Accordion({
 
 /* ── Inline form ── */
 function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: string) => Promise<boolean>; onCancel: () => void }) {
-  const [type, setType] = useState("FEEDBACK");
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -303,33 +296,17 @@ function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: 
     e.preventDefault();
     if (!content.trim()) return;
     setSubmitting(true);
-    await onSubmit(type, content);
+    await onSubmit("FEEDBACK", content);
     setSubmitting(false);
     setContent("");
   }
 
   return (
     <form onSubmit={handle} className="space-y-2">
-      <div className="flex gap-1 flex-wrap">
-        {TYPES.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            onClick={() => setType(t.value)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              type === t.value
-                ? "border-violet-500 bg-violet-500/20 text-violet-300"
-                : "border-white/10 text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder={type === "FEEDBACK" ? "Escreva um feedback..." : type === "DIRECIONAMENTO" ? "Escreva um direcionamento..." : "Escreva uma observação..."}
+        placeholder="Escreva um feedback..."
         rows={4}
         className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/50 resize-none leading-relaxed"
       />
@@ -372,7 +349,6 @@ function CommentCard({
   onSaveEdit?: (id: string) => void;
   onCancelEdit?: () => void;
 }) {
-  const { label, color } = commentTypeLabel(c.type);
   const isEditing = editingId === c.id;
   const isOwn = c.author.id === currentUserId;
   const [contentModalOpen, setContentModalOpen] = useState(false);
@@ -397,7 +373,6 @@ function CommentCard({
               {c.author.name}
               {(c.author.role === "ADMIN" || c.author.role === "MENTOR") && <span className="ml-1 text-violet-400">· mentor</span>}
             </span>
-            <span className={`self-start text-xs font-medium px-1.5 rounded-full border ${color}`}>{label}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -462,7 +437,6 @@ function CommentCard({
                   </div>
                 )}
                 <span className="text-sm font-semibold text-white truncate">{c.author.name}</span>
-                <span className={`text-xs font-medium px-1.5 rounded-full border flex-shrink-0 ${color}`}>{label}</span>
               </div>
               <button onClick={() => setContentModalOpen(false)}
                 className="ml-auto text-gray-600 hover:text-gray-300 transition-colors flex-shrink-0">
