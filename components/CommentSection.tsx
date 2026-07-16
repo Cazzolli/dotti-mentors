@@ -1,8 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { timeAgo } from "@/lib/utils";
+import CharCounter from "./CharCounter";
 
 const CONTENT_PREVIEW_LIMIT = 220;
+const CONTENT_MAX_LENGTH = 5000;
 
 interface Video { id: string; title: string }
 
@@ -305,11 +307,13 @@ function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: 
     <form onSubmit={handle} className="space-y-2">
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e) => setContent(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
         placeholder="Escreva um feedback..."
         rows={4}
+        maxLength={CONTENT_MAX_LENGTH}
         className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/50 resize-none leading-relaxed"
       />
+      <CharCounter current={content.length} max={CONTENT_MAX_LENGTH} />
       <div className="flex gap-2">
         <button
           type="button"
@@ -395,11 +399,13 @@ function CommentCard({
         <div className="space-y-2">
           <textarea
             value={editContent ?? ""}
-            onChange={(e) => onEditChange(e.target.value)}
+            onChange={(e) => onEditChange(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
             autoFocus
             rows={4}
+            maxLength={CONTENT_MAX_LENGTH}
             className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/50 resize-none leading-relaxed"
           />
+          <CharCounter current={(editContent ?? "").length} max={CONTENT_MAX_LENGTH} />
           <div className="flex gap-2">
             <button onClick={onCancelEdit}
               className="flex-1 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors">

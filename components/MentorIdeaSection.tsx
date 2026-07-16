@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { timeAgo } from "@/lib/utils";
+import CharCounter from "./CharCounter";
+
+const CONTENT_MAX_LENGTH = 5000;
 
 interface MentorIdea {
   id: string;
@@ -132,12 +135,14 @@ export default function MentorIdeaSection({ studentId, currentUserId, currentUse
           <p className="text-xs text-gray-500">Escreva uma ideia de canal ou conteúdo. Links são clicáveis.</p>
           <textarea
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => setDraft(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
             placeholder="Ex: Você poderia explorar vídeos sobre gastronomia regional, mostrando o preparo de pratos típicos..."
             rows={5}
             autoFocus
+            maxLength={CONTENT_MAX_LENGTH}
             className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500/40 resize-none leading-relaxed"
           />
+          <CharCounter current={draft.length} max={CONTENT_MAX_LENGTH} />
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => { setFormOpen(false); setDraft(""); }}
               className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors">
@@ -209,10 +214,12 @@ export default function MentorIdeaSection({ studentId, currentUserId, currentUse
                 {/* Content / edit */}
                 {isEditing ? (
                   <div className="space-y-2">
-                    <textarea value={editDraft} onChange={(e) => setEditDraft(e.target.value)}
+                    <textarea value={editDraft} onChange={(e) => setEditDraft(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
                       autoFocus rows={5}
+                      maxLength={CONTENT_MAX_LENGTH}
                       className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500/40 resize-none leading-relaxed"
                     />
+                    <CharCounter current={editDraft.length} max={CONTENT_MAX_LENGTH} />
                     <div className="flex gap-2 justify-end">
                       <button onClick={() => setEditingId(null)}
                         className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors">

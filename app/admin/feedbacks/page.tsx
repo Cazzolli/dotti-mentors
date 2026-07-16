@@ -3,7 +3,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import CharCounter from "@/components/CharCounter";
 import { timeAgo } from "@/lib/utils";
+
+const CONTENT_MAX_LENGTH = 5000;
 
 interface FeedbackComment {
   id: string;
@@ -431,10 +434,12 @@ function FeedbackCard({
         <div className="space-y-2">
           <textarea
             value={editContent}
-            onChange={(e) => onEditChange(e.target.value)}
+            onChange={(e) => onEditChange(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
             autoFocus rows={4}
+            maxLength={CONTENT_MAX_LENGTH}
             className="w-full bg-[#0d0d14] border border-white/10 focus:border-violet-500/50 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none resize-none leading-relaxed"
           />
+          <CharCounter current={editContent.length} max={CONTENT_MAX_LENGTH} />
           <div className="flex gap-2 justify-end">
             <button onClick={onCancelEdit}
               className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors">

@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { formatViews, formatDuration, timeAgo } from "@/lib/utils";
+import CharCounter from "./CharCounter";
+
+const IDEA_MAX_LENGTH = 2000;
 
 interface RefLink {
   url: string;
@@ -321,12 +324,14 @@ export default function VideoCard({ video, now, onSelect, selected, hasUnreadFee
               <label className="text-xs text-gray-500 font-medium">Descrição da ideia</label>
               <textarea
                 value={draftIdea}
-                onChange={(e) => setDraftIdea(e.target.value)}
+                onChange={(e) => setDraftIdea(e.target.value.slice(0, IDEA_MAX_LENGTH))}
                 autoFocus
                 rows={5}
+                maxLength={IDEA_MAX_LENGTH}
                 placeholder="Descreva de onde veio a ideia deste vídeo: referência usada, ângulo escolhido, o que inspirou o tema..."
                 className="w-full bg-[#0d0d14] border border-white/10 focus:border-amber-500/40 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none resize-none leading-relaxed"
               />
+              <CharCounter current={draftIdea.length} max={IDEA_MAX_LENGTH} />
             </div>
 
             <div className="flex flex-col gap-2">

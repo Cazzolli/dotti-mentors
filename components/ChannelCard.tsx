@@ -16,12 +16,16 @@ interface Channel {
 }
 
 export default function ChannelCard({ channel }: { channel: Channel }) {
+  const feedbackCount = channel._count?.comments ?? 0;
+  const hasNoFeedback = feedbackCount === 0;
   return (
     <Link
       href={`/canais/${channel.id}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-[#13131e] hover:bg-[#1c1c2a] border border-white/5 hover:border-white/10 rounded-xl p-4 transition-all duration-200"
+      className={`block bg-[#13131e] hover:bg-[#1c1c2a] border rounded-xl p-4 transition-all duration-200 ${
+        hasNoFeedback ? "border-amber-500/30 hover:border-amber-500/50" : "border-white/5 hover:border-white/10"
+      }`}
     >
       <div className="flex items-center gap-3 mb-3">
         {channel.avatarUrl ? (
@@ -47,10 +51,15 @@ export default function ChannelCard({ channel }: { channel: Channel }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="grid grid-cols-4 gap-2 text-center">
         <Stat label="Inscritos" value={formatViews(channel.subscriberCount)} />
         <Stat label="Views" value={formatViews(channel.viewCount)} />
         <Stat label="Vídeos" value={String(channel._count?.videos ?? channel.videoCount)} />
+        <Stat
+          label="Feedbacks"
+          value={`${feedbackCount} ${hasNoFeedback ? "⚠️" : "✅"}`}
+          highlight={hasNoFeedback ? "amber" : undefined}
+        />
       </div>
 
       {channel.lastSync && (
@@ -62,11 +71,11 @@ export default function ChannelCard({ channel }: { channel: Channel }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, highlight }: { label: string; value: string; highlight?: "amber" }) {
   return (
-    <div className="bg-white/5 rounded-lg py-2">
+    <div className={`rounded-lg py-2 ${highlight === "amber" ? "bg-amber-500/10" : "bg-white/5"}`}>
       <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-semibold text-gray-200">{value}</p>
+      <p className={`text-sm font-semibold ${highlight === "amber" ? "text-amber-400" : "text-gray-200"}`}>{value}</p>
     </div>
   );
 }

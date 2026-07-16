@@ -23,6 +23,9 @@ export async function PATCH(
   }
 
   const { videoIdea, videoLinks } = await req.json();
+  if (typeof videoIdea === "string" && videoIdea.length > 2000) {
+    return NextResponse.json({ error: "videoIdea too long" }, { status: 400 });
+  }
   const updated = await db.video.update({
     where: { id },
     data: {
