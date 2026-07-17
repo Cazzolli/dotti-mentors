@@ -36,6 +36,7 @@ export default function FeedbacksPage() {
   const [channelFeedbacks, setChannelFeedbacks] = useState<FeedbackComment[]>([]);
   const [videoFeedbacks, setVideoFeedbacks] = useState<FeedbackComment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [period, setPeriod] = useState("all");
   const [scope, setScope] = useState("all");
@@ -58,6 +59,7 @@ export default function FeedbacksPage() {
 
   const loadFeedbacks = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     const params = new URLSearchParams({ period });
     if (mentorFilter) params.set("mentorName", mentorFilter);
     if (studentFilter) params.set("studentName", studentFilter);
@@ -65,13 +67,31 @@ export default function FeedbacksPage() {
     const fetchChannel = scope === "all" || scope === "channel";
     const fetchVideo = scope === "all" || scope === "video";
 
-    const [chanRes, vidRes] = await Promise.all([
-      fetchChannel ? fetch(`/api/admin/feedbacks?${params}&scope=channel`) : Promise.resolve(null),
-      fetchVideo ? fetch(`/api/admin/feedbacks?${params}&scope=video`) : Promise.resolve(null),
-    ]);
+    let hadError = false;
+    try {
+      const [chanRes, vidRes] = await Promise.all([
+        fetchChannel ? fetch(`/api/admin/feedbacks?${params}&scope=channel`) : Promise.resolve(null),
+        fetchVideo ? fetch(`/api/admin/feedbacks?${params}&scope=video`) : Promise.resolve(null),
+      ]);
 
-    if (chanRes?.ok) setChannelFeedbacks(await chanRes.json()); else if (!fetchChannel) setChannelFeedbacks([]);
-    if (vidRes?.ok) setVideoFeedbacks(await vidRes.json()); else if (!fetchVideo) setVideoFeedbacks([]);
+      if (chanRes) {
+        if (chanRes.ok) setChannelFeedbacks(await chanRes.json());
+        else hadError = true;
+      } else {
+        setChannelFeedbacks([]);
+      }
+
+      if (vidRes) {
+        if (vidRes.ok) setVideoFeedbacks(await vidRes.json());
+        else hadError = true;
+      } else {
+        setVideoFeedbacks([]);
+      }
+    } catch {
+      hadError = true;
+    }
+
+    setLoadError(hadError);
     setLoading(false);
   }, [period, scope, mentorFilter, studentFilter]);
 
@@ -201,6 +221,15 @@ export default function FeedbacksPage() {
           <div className="flex items-center justify-center py-32 text-gray-600 text-sm">Carregando...</div>
         ) : (
           <div className="p-6 space-y-10 max-w-5xl mx-auto">
+
+            {loadError && (
+              <div className="flex items-center justify-between gap-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3">
+                <span>Não foi possível carregar todos os feedbacks. Os dados podem estar incompletos.</span>
+                <button onClick={loadFeedbacks} className="underline hover:text-red-300 transition-colors whitespace-nowrap">
+                  Tentar novamente
+                </button>
+              </div>
+            )}
 
             {/* Feedbacks de Canal */}
             {(scope === "all" || scope === "channel") && <Section
