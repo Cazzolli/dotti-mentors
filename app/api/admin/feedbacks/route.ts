@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const studentName = searchParams.get("studentName") ?? "";
   const scope = searchParams.get("scope") ?? "all"; // "channel" | "video" | "all"
 
-  const where: any = {};
+  const where: any = { type: { not: "RESPOSTA" } };
 
   if (period !== "all") {
     const days: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     if (d) where.createdAt = { gte: new Date(Date.now() - d * 24 * 60 * 60 * 1000) };
   }
 
-  if (type) where.type = type;
+  if (type && type !== "RESPOSTA") where.type = type;
   if (scope === "channel") where.videoId = null;
   if (scope === "video") where.videoId = { not: null };
 
