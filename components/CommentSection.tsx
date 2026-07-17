@@ -16,6 +16,7 @@ interface Comment {
   videoId: string | null;
   video: Video | null;
   author: { id: string; name: string; role: string; avatarUrl?: string | null };
+  replies?: Comment[];
 }
 
 interface Props {
@@ -67,7 +68,7 @@ export default function CommentSection({
     if (res.ok) setVideoComments(await res.json());
   }
 
-  async function submitComment(target: "channel" | "video", type: string, content: string) {
+  async function submitComment(target: "channel" | "video", type: string, content: string, parentId?: string) {
     const res = await fetch("/api/comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -76,19 +77,35 @@ export default function CommentSection({
         videoId: target === "video" ? videoId : null,
         type,
         content,
+        parentId: parentId ?? null,
       }),
     });
     if (!res.ok) return false;
     const newComment = await res.json();
-    if (target === "channel") {
-      setChannelComments((prev) => [...prev, newComment]);
-      setChannelFormOpen(false);
+    const setList = target === "channel" ? setChannelComments : setVideoComments;
+    if (parentId) {
+      setList((prev) => prev.map((c) => c.id === parentId ? { ...c, replies: [...(c.replies ?? []), newComment] } : c));
     } else {
-      setVideoComments((prev) => [...prev, newComment]);
-      setVideoFormOpen(false);
-      if (videoId) loadVideoComments(videoId);
+      setList((prev) => [...prev, newComment]);
+      if (target === "channel") setChannelFormOpen(false);
+      else setVideoFormOpen(false);
     }
+    if (target === "video" && videoId) loadVideoComments(videoId);
     return true;
+  }
+
+  function patchInLists(id: string, patch: Partial<Comment>) {
+    const apply = (list: Comment[]): Comment[] =>
+      list.map((c) => c.id === id ? { ...c, ...patch } : { ...c, replies: c.replies ? apply(c.replies) : c.replies });
+    setChannelComments(apply);
+    setVideoComments(apply);
+  }
+
+  function removeFromLists(id: string) {
+    const apply = (list: Comment[]): Comment[] =>
+      list.filter((c) => c.id !== id).map((c) => ({ ...c, replies: c.replies ? c.replies.filter((r) => r.id !== id) : c.replies }));
+    setChannelComments(apply);
+    setVideoComments(apply);
   }
 
   async function handleEdit(id: string) {
@@ -101,20 +118,16 @@ export default function CommentSection({
     });
     if (res.ok) {
       const updated = await res.json();
-      setChannelComments((prev) => prev.map((c) => c.id === id ? { ...c, content: updated.content } : c));
-      setVideoComments((prev) => prev.map((c) => c.id === id ? { ...c, content: updated.content } : c));
+      patchInLists(id, { content: updated.content });
       setEditingId(null);
     }
     setEditSaving(false);
   }
 
-  async function handleDelete(id: string, target: "channel" | "video") {
+  async function handleDelete(id: string) {
     if (!confirm("Excluir este comentário?")) return;
     const res = await fetch(`/api/comments/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      if (target === "channel") setChannelComments((p) => p.filter((c) => c.id !== id));
-      else setVideoComments((p) => p.filter((c) => c.id !== id));
-    }
+    if (res.ok) removeFromLists(id);
   }
 
   const isMentorOrAdmin = currentUserRole === "ADMIN" || currentUserRole === "MENTOR";
@@ -152,7 +165,8 @@ export default function CommentSection({
                 currentUserId={currentUserId}
                 currentUserRole={currentUserRole}
                 now={now}
-                onDelete={(id) => handleDelete(id, "channel")}
+                onDelete={handleDelete}
+                onReply={(content) => submitComment("channel", "RESPOSTA", content, c.id)}
                 editingId={editingId}
                 editContent={editContent}
                 editSaving={editSaving}
@@ -197,7 +211,8 @@ export default function CommentSection({
                 currentUserId={currentUserId}
                 currentUserRole={currentUserRole}
                 now={now}
-                onDelete={(id) => handleDelete(id, "video")}
+                onDelete={handleDelete}
+                onReply={(content) => submitComment("video", "RESPOSTA", content, c.id)}
                 editingId={editingId}
                 editContent={editContent}
                 editSaving={editSaving}
@@ -336,7 +351,7 @@ function InlineForm({ onSubmit, onCancel }: { onSubmit: (type: string, content: 
 
 /* ── Comment card ── */
 function CommentCard({
-  c, currentUserId, currentUserRole, now, onDelete, onViewVideo,
+  c, currentUserId, currentUserRole, now, onDelete, onViewVideo, onReply, isReply,
   editingId, editContent, editSaving, onStartEdit, onEditChange, onSaveEdit, onCancelEdit,
 }: {
   c: Comment;
@@ -345,6 +360,8 @@ function CommentCard({
   now: number;
   onDelete: (id: string) => void;
   onViewVideo?: () => void;
+  onReply?: (content: string) => Promise<boolean>;
+  isReply?: boolean;
   editingId?: string | null;
   editContent?: string;
   editSaving?: boolean;
@@ -356,6 +373,7 @@ function CommentCard({
   const isEditing = editingId === c.id;
   const isOwn = c.author.id === currentUserId;
   const [contentModalOpen, setContentModalOpen] = useState(false);
+  const [replyFormOpen, setReplyFormOpen] = useState(false);
   const normalized = c.content.replace(/\n+/g, " ").trim();
   const isTruncatable = normalized.length > CONTENT_PREVIEW_LIMIT;
   const displayContent = isTruncatable ? normalized.slice(0, CONTENT_PREVIEW_LIMIT).trimEnd() + "…" : normalized;
@@ -474,6 +492,99 @@ function CommentCard({
           </button>
         </div>
       )}
+
+      {!isReply && onReply && !isEditing && (
+        <div className="pl-7">
+          <button
+            onClick={() => setReplyFormOpen((v) => !v)}
+            className="text-xs text-gray-500 hover:text-emerald-400 transition-colors font-medium"
+          >
+            {replyFormOpen ? "Cancelar" : "Responder"}
+          </button>
+        </div>
+      )}
+
+      {!isReply && replyFormOpen && onReply && (
+        <div className="pl-7">
+          <ReplyForm
+            onSubmit={async (content) => {
+              const ok = await onReply(content);
+              if (ok) setReplyFormOpen(false);
+              return ok;
+            }}
+            onCancel={() => setReplyFormOpen(false)}
+          />
+        </div>
+      )}
+
+      {!isReply && c.replies && c.replies.length > 0 && (
+        <div className="pl-7 space-y-2 pt-1">
+          {c.replies.map((r) => (
+            <CommentCard
+              key={r.id}
+              c={r}
+              isReply
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              now={now}
+              onDelete={onDelete}
+              editingId={editingId}
+              editContent={editContent}
+              editSaving={editSaving}
+              onStartEdit={onStartEdit}
+              onEditChange={onEditChange}
+              onSaveEdit={onSaveEdit}
+              onCancelEdit={onCancelEdit}
+            />
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+/* ── Reply form ── */
+function ReplyForm({ onSubmit, onCancel }: { onSubmit: (content: string) => Promise<boolean>; onCancel: () => void }) {
+  const [content, setContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handle(e: React.FormEvent) {
+    e.preventDefault();
+    if (!content.trim()) return;
+    setSubmitting(true);
+    await onSubmit(content);
+    setSubmitting(false);
+    setContent("");
+  }
+
+  return (
+    <form onSubmit={handle} className="space-y-2 mt-1">
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
+        placeholder="Escreva uma resposta..."
+        rows={3}
+        maxLength={CONTENT_MAX_LENGTH}
+        autoFocus
+        className="w-full bg-[#0d0d14] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 resize-none leading-relaxed"
+      />
+      <CharCounter current={content.length} max={CONTENT_MAX_LENGTH} />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 rounded-lg transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={submitting || !content.trim()}
+          className="flex-1 py-1.5 text-xs text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-lg transition-colors font-medium"
+        >
+          {submitting ? "Enviando..." : "Enviar"}
+        </button>
+      </div>
+    </form>
   );
 }

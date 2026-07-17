@@ -20,8 +20,10 @@ export async function GET() {
       name: true,
       email: true,
       blocked: true,
+      lastAccessAt: true,
+      firstClassDate: true,
       channels: {
-        select: { id: true, _count: { select: { comments: true } } },
+        select: { id: true, createdAt: true, _count: { select: { comments: true } } },
         orderBy: { createdAt: "desc" },
       },
     },
