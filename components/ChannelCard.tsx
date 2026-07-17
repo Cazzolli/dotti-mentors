@@ -62,19 +62,24 @@ export default function ChannelCard({ channel }: { channel: Channel }) {
         />
       </div>
 
-      {channel.lastSync && (
-        <p className="text-xs text-gray-600 mt-3 text-right">
-          Sync {timeAgo(channel.lastSync)}
-        </p>
-      )}
+      <div className="flex items-center justify-between mt-3">
+        <span className={`text-xs flex items-center gap-1 ${hasNoFeedback ? "text-amber-400" : "text-emerald-400"}`}>
+          {hasNoFeedback ? "⚠️ Sem feedback" : "✅ Com feedback"}
+        </span>
+        {channel.lastSync && (
+          <p className="text-xs text-gray-600">
+            Sync {timeAgo(channel.lastSync)}
+          </p>
+        )}
+      </div>
     </Link>
   );
 }
 
 function Stat({ label, value, highlight }: { label: string; value: string; highlight?: "amber" }) {
   return (
-    <div className={`rounded-lg py-2 ${highlight === "amber" ? "bg-amber-500/10" : "bg-white/5"}`}>
-      <p className="text-xs text-gray-500">{label}</p>
+    <div className={`rounded-lg py-2 px-1 ${highlight === "amber" ? "bg-amber-500/10" : "bg-white/5"}`}>
+      <p className="text-[10px] leading-tight text-gray-500 truncate">{label}</p>
       <p className={`text-sm font-semibold ${highlight === "amber" ? "text-amber-400" : "text-gray-200"}`}>{value}</p>
     </div>
   );

@@ -12,8 +12,12 @@ interface Student {
   name: string;
   email: string;
   blocked: boolean;
-  channels: { id: string; _count: { comments: number } }[];
+  lastAccessAt: string | null;
+  firstClassDate: string | null;
+  channels: { id: string; createdAt: string; _count: { comments: number } }[];
 }
+
+type SortOption = "recent" | "lastChannel" | "lastAccess" | "mostChannels" | "firstClassDate";
 
 export default function AlunosPage() {
   const { data: session, status } = useSession();
@@ -24,7 +28,8 @@ export default function AlunosPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [togglingBlockId, setTogglingBlockId] = useState<string | null>(null);
-  const [editStudent, setEditStudent] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [editStudent, setEditStudent] = useState<{ id: string; name: string; email: string; firstClassDate: string | null } | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("recent");
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -43,7 +48,7 @@ export default function AlunosPage() {
 
   function handleUserCreated(user: { id: string; name: string; email: string; role: string }) {
     if (user.role === "STUDENT")
-      setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, blocked: false, channels: [] }, ...prev]);
+      setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, blocked: false, lastAccessAt: null, firstClassDate: null, channels: [] }, ...prev]);
   }
 
   async function handleToggleBlock(student: Student) {
@@ -88,6 +93,25 @@ export default function AlunosPage() {
         s.email.toLowerCase().includes(search.toLowerCase()))
     : students;
 
+  function lastChannelDate(s: Student) {
+    return s.channels[0]?.createdAt ? new Date(s.channels[0].createdAt).getTime() : 0;
+  }
+
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case "lastChannel":
+        return lastChannelDate(b) - lastChannelDate(a);
+      case "lastAccess":
+        return (b.lastAccessAt ? new Date(b.lastAccessAt).getTime() : 0) - (a.lastAccessAt ? new Date(a.lastAccessAt).getTime() : 0);
+      case "mostChannels":
+        return b.channels.length - a.channels.length;
+      case "firstClassDate":
+        return (b.firstClassDate ? new Date(b.firstClassDate).getTime() : 0) - (a.firstClassDate ? new Date(a.firstClassDate).getTime() : 0);
+      default:
+        return 0;
+    }
+  });
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar role={role} userName={session?.user?.name ?? ""} />
@@ -104,22 +128,35 @@ export default function AlunosPage() {
             {isAdmin && <CreateUserModal onCreated={handleUserCreated} />}
           </div>
 
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou e-mail..."
-            className="w-full max-w-sm bg-[#0f0f14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
-          />
+          <div className="flex gap-3 flex-wrap">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou e-mail..."
+              className="w-full max-w-sm bg-[#0f0f14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
+            />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="bg-[#0f0f14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
+            >
+              <option value="recent">Mais recentes (cadastro)</option>
+              <option value="lastChannel">Últimos que adicionaram canais</option>
+              <option value="lastAccess">Últimos que acessaram a plataforma</option>
+              <option value="mostChannels">Mais canais</option>
+              <option value="firstClassDate">Data da 1ª aula</option>
+            </select>
+          </div>
 
-          {filtered.length === 0 ? (
+          {sorted.length === 0 ? (
             <div className="text-center py-16 text-gray-600">
               <p className="text-lg mb-2">{search ? "Nenhum aluno encontrado" : "Nenhum aluno ainda"}</p>
               {!search && isAdmin && <p className="text-sm">Crie um usuário para adicionar alunos à plataforma.</p>}
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4">
-              {filtered.map((student) => {
+              {sorted.map((student) => {
                 const feedbackCount = student.channels.reduce((sum, c) => sum + c._count.comments, 0);
                 return (
                 <div key={student.id} className="relative group">
@@ -163,7 +200,7 @@ export default function AlunosPage() {
                   {isAdmin && (
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1 transition-all">
                       <button
-                        onClick={(e) => { e.preventDefault(); setEditStudent({ id: student.id, name: student.name, email: student.email }); }}
+                        onClick={(e) => { e.preventDefault(); setEditStudent({ id: student.id, name: student.name, email: student.email, firstClassDate: student.firstClassDate }); }}
                         className="w-6 h-6 flex items-center justify-center rounded-md bg-black/60 hover:bg-violet-500/20 text-gray-500 hover:text-violet-400 transition-colors"
                         title="Editar aluno"
                       >
@@ -206,8 +243,8 @@ export default function AlunosPage() {
       <EditStudentModal
         student={editStudent}
         onClose={() => setEditStudent(null)}
-        onSaved={(id, name, email) =>
-          setStudents((prev) => prev.map((s) => s.id === id ? { ...s, name, email } : s))
+        onSaved={(id, name, email, firstClassDate) =>
+          setStudents((prev) => prev.map((s) => s.id === id ? { ...s, name, email, firstClassDate } : s))
         }
       />
 

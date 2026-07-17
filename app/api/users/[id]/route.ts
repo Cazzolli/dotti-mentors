@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const user = session.user as any;
-  const { name, email, avatarUrl, currentPassword, newPassword, blocked } = await req.json();
+  const { name, email, avatarUrl, currentPassword, newPassword, blocked, firstClassDate } = await req.json();
 
   // block/unblock — ADMIN only, can target other users
   if (blocked !== undefined) {
@@ -61,11 +61,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return NextResponse.json({ error: "Senha deve ter entre 6 e 128 caracteres" }, { status: 400 });
       data.passwordHash = await bcrypt.hash(newPassword, 12);
     }
+    if (firstClassDate !== undefined) {
+      data.firstClassDate = firstClassDate ? new Date(firstClassDate) : null;
+    }
 
     const updated = await db.user.update({
       where: { id },
       data,
-      select: { id: true, name: true, email: true, avatarUrl: true, role: true },
+      select: { id: true, name: true, email: true, avatarUrl: true, role: true, firstClassDate: true },
     });
     return NextResponse.json(updated);
   }

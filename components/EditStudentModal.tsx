@@ -2,15 +2,16 @@
 import { useState, useEffect } from "react";
 
 interface Props {
-  student: { id: string; name: string; email: string } | null;
+  student: { id: string; name: string; email: string; firstClassDate?: string | null } | null;
   onClose: () => void;
-  onSaved: (id: string, name: string, email: string) => void;
+  onSaved: (id: string, name: string, email: string, firstClassDate: string | null) => void;
 }
 
 export default function EditStudentModal({ student, onClose, onSaved }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [firstClassDate, setFirstClassDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,6 +20,7 @@ export default function EditStudentModal({ student, onClose, onSaved }: Props) {
       setName(student.name);
       setEmail(student.email);
       setNewPassword("");
+      setFirstClassDate(student.firstClassDate ? student.firstClassDate.slice(0, 10) : "");
       setError("");
     }
   }, [student]);
@@ -34,7 +36,7 @@ export default function EditStudentModal({ student, onClose, onSaved }: Props) {
     if (newPassword && newPassword.length < 6) { setError("Senha deve ter no mínimo 6 caracteres"); return; }
 
     setSaving(true);
-    const body: any = { name: name.trim(), email: email.trim() };
+    const body: any = { name: name.trim(), email: email.trim(), firstClassDate: firstClassDate || null };
     if (newPassword) body.newPassword = newPassword;
 
     const res = await fetch(`/api/users/${student!.id}`, {
@@ -45,7 +47,7 @@ export default function EditStudentModal({ student, onClose, onSaved }: Props) {
 
     if (res.ok) {
       const data = await res.json();
-      onSaved(student!.id, data.name, data.email);
+      onSaved(student!.id, data.name, data.email, data.firstClassDate ?? null);
       onClose();
     } else {
       const data = await res.json();
@@ -84,6 +86,16 @@ export default function EditStudentModal({ student, onClose, onSaved }: Props) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#0f0f14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">Data da 1ª aula</label>
+            <input
+              type="date"
+              value={firstClassDate}
+              onChange={(e) => setFirstClassDate(e.target.value)}
               className="w-full bg-[#0f0f14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
             />
           </div>
