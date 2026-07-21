@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       student: { select: { id: true, name: true, email: true } },
-      _count: { select: { videos: true, comments: true } },
+      _count: { select: { videos: true, comments: { where: { type: { not: "RESPOSTA" } } } } },
     },
     orderBy: { createdAt: "desc" },
   });

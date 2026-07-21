@@ -15,6 +15,7 @@ interface Student {
   lastAccessAt: string | null;
   firstClassDate: string | null;
   channels: { id: string; createdAt: string; _count: { comments: number } }[];
+  receivedIdeas: { id: string }[];
 }
 
 type SortOption = "recent" | "lastChannel" | "lastAccess" | "mostChannels" | "firstClassDate";
@@ -48,7 +49,7 @@ export default function AlunosPage() {
 
   function handleUserCreated(user: { id: string; name: string; email: string; role: string }) {
     if (user.role === "STUDENT")
-      setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, blocked: false, lastAccessAt: null, firstClassDate: null, channels: [] }, ...prev]);
+      setStudents((prev) => [{ id: user.id, name: user.name, email: user.email, blocked: false, lastAccessAt: null, firstClassDate: null, channels: [], receivedIdeas: [] }, ...prev]);
   }
 
   async function handleToggleBlock(student: Student) {
@@ -172,12 +173,22 @@ export default function AlunosPage() {
                       <div className="w-9 h-9 rounded-full bg-violet-500/20 flex items-center justify-center text-sm font-medium text-violet-300 flex-shrink-0">
                         {student.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-100 truncate group-hover:text-white transition-colors">
                           {student.name}
                         </p>
                         <p className="text-xs text-gray-600 truncate">{student.email}</p>
                       </div>
+                      {student.receivedIdeas.length > 0 && (
+                        <svg
+                          className="w-4 h-4 text-amber-400 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <title>Já recebeu ideia do mentor</title>
+                          <path d="M9.663 17h4.673M12 3a6 6 0 00-3.446 10.916c.44.309.698.807.698 1.334V16a1 1 0 001 1h3.5a1 1 0 001-1v-.75c0-.527.258-1.025.698-1.334A6 6 0 0012 3z" />
+                        </svg>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="bg-white/5 rounded-lg px-3 py-2 text-center">
