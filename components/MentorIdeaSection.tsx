@@ -195,7 +195,7 @@ export default function MentorIdeaSection({ studentId, currentUserId, currentUse
                         </svg>
                       </button>
                     )}
-                    {(isOwn || currentUserRole === "ADMIN") && isMentorOrAdmin && !isEditing && (
+                    {isOwn && isMentorOrAdmin && !isEditing && (
                       <button onClick={() => setConfirmDeleteId(idea.id)}
                         className="text-gray-700 hover:text-red-400 transition-colors" title="Excluir">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
