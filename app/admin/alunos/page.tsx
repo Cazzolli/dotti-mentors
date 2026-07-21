@@ -18,7 +18,7 @@ interface Student {
   receivedIdeas: { id: string }[];
 }
 
-type SortOption = "recent" | "lastChannel" | "lastAccess" | "mostChannels" | "firstClassDate";
+type SortOption = "recent" | "lastChannel" | "lastAccess" | "mostChannels" | "firstClassDate" | "mostFeedback";
 
 export default function AlunosPage() {
   const { data: session, status } = useSession();
@@ -98,6 +98,10 @@ export default function AlunosPage() {
     return s.channels[0]?.createdAt ? new Date(s.channels[0].createdAt).getTime() : 0;
   }
 
+  function feedbackCount(s: Student) {
+    return s.channels.reduce((sum, c) => sum + c._count.comments, 0);
+  }
+
   const sorted = [...filtered].sort((a, b) => {
     switch (sortBy) {
       case "lastChannel":
@@ -108,6 +112,8 @@ export default function AlunosPage() {
         return b.channels.length - a.channels.length;
       case "firstClassDate":
         return (b.firstClassDate ? new Date(b.firstClassDate).getTime() : 0) - (a.firstClassDate ? new Date(a.firstClassDate).getTime() : 0);
+      case "mostFeedback":
+        return feedbackCount(b) - feedbackCount(a);
       default:
         return 0;
     }
@@ -146,6 +152,7 @@ export default function AlunosPage() {
               <option value="lastChannel">Últimos que adicionaram canais</option>
               <option value="lastAccess">Últimos que acessaram a plataforma</option>
               <option value="mostChannels">Mais canais</option>
+              <option value="mostFeedback">Mais feedback</option>
               <option value="firstClassDate">Data da 1ª aula</option>
             </select>
           </div>
@@ -158,7 +165,7 @@ export default function AlunosPage() {
           ) : (
             <div className="grid grid-cols-4 gap-4">
               {sorted.map((student) => {
-                const feedbackCount = student.channels.reduce((sum, c) => sum + c._count.comments, 0);
+                const studentFeedbackCount = feedbackCount(student);
                 return (
                 <div key={student.id} className="relative group">
                   <Link
@@ -196,8 +203,8 @@ export default function AlunosPage() {
                         <p className="text-xs text-gray-500">{student.channels.length !== 1 ? "canais" : "canal"}</p>
                       </div>
                       <div className="bg-white/5 rounded-lg px-3 py-2 text-center">
-                        <p className="text-lg font-semibold text-gray-200">{feedbackCount}</p>
-                        <p className="text-xs text-gray-500">{feedbackCount !== 1 ? "feedbacks" : "feedback"}</p>
+                        <p className="text-lg font-semibold text-gray-200">{studentFeedbackCount}</p>
+                        <p className="text-xs text-gray-500">{studentFeedbackCount !== 1 ? "feedbacks" : "feedback"}</p>
                       </div>
                     </div>
                     {student.blocked && (
