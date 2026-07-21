@@ -20,13 +20,20 @@ interface NotifChannel {
   student: { name: string };
 }
 
+interface NotifMentorIdea {
+  id: string;
+  content: string;
+  author: { name: string; avatarUrl: string | null };
+}
+
 interface Notification {
   id: string;
-  type: "FEEDBACK" | "NEW_CHANNEL";
+  type: "FEEDBACK" | "NEW_CHANNEL" | "MENTOR_IDEA";
   read: boolean;
   createdAt: string;
   comment: NotifComment | null;
   channel: NotifChannel | null;
+  mentorIdea: NotifMentorIdea | null;
 }
 
 const COMMENT_TYPE_LABEL: Record<string, string> = {
@@ -97,6 +104,8 @@ export default function NotificationBell() {
       router.push(url);
     } else if (n.type === "NEW_CHANNEL" && n.channel?.id) {
       router.push(`/canais/${n.channel.id}`);
+    } else if (n.type === "MENTOR_IDEA") {
+      router.push("/dashboard");
     }
     setOpen(false);
   }
@@ -163,9 +172,11 @@ export default function NotificationBell() {
                   <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs mt-0.5 ${
                     n.type === "NEW_CHANNEL"
                       ? "bg-emerald-500/15 text-emerald-400"
+                      : n.type === "MENTOR_IDEA"
+                      ? "bg-amber-500/15 text-amber-400"
                       : "bg-violet-500/15 text-violet-400"
                   }`}>
-                    {n.type === "NEW_CHANNEL" ? "📺" : "💬"}
+                    {n.type === "NEW_CHANNEL" ? "📺" : n.type === "MENTOR_IDEA" ? "💡" : "💬"}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -187,6 +198,14 @@ export default function NotificationBell() {
                         <span className="font-medium text-white">{n.channel.student.name}</span>
                         {" cadastrou o canal "}
                         <span className="text-emerald-300">{n.channel.handle ?? n.channel.name}</span>
+                      </p>
+                    )}
+                    {n.type === "MENTOR_IDEA" && n.mentorIdea && (
+                      <p className="text-xs text-gray-200 leading-snug">
+                        <span className="font-medium text-white">{n.mentorIdea.author.name}</span>
+                        {" enviou uma "}
+                        <span className="text-amber-300">ideia de canal</span>
+                        {" para você"}
                       </p>
                     )}
                     <p className="text-xs text-gray-600 mt-0.5">{timeAgo(n.createdAt)}</p>
