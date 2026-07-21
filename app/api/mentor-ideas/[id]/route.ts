@@ -37,7 +37,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const idea = await db.mentorIdea.findUnique({ where: { id } });
   if (!idea) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (idea.authorId !== user.id && user.role !== "ADMIN") {
+  if (idea.authorId !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
