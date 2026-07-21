@@ -23,9 +23,14 @@ export async function GET() {
       lastAccessAt: true,
       firstClassDate: true,
       channels: {
-        select: { id: true, createdAt: true, _count: { select: { comments: true } } },
+        select: {
+          id: true,
+          createdAt: true,
+          _count: { select: { comments: { where: { type: { not: "RESPOSTA" } } } } },
+        },
         orderBy: { createdAt: "desc" },
       },
+      receivedIdeas: { select: { id: true }, take: 1 },
     },
     orderBy: { createdAt: "desc" },
   });

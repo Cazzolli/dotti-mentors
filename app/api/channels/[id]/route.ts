@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: { id },
     include: {
       student: { select: { id: true, name: true, email: true } },
-      _count: { select: { videos: true, comments: true } },
+      _count: { select: { videos: true, comments: { where: { type: { not: "RESPOSTA" } } } } },
     },
   });
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });

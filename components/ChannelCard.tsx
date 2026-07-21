@@ -58,8 +58,17 @@ export default function ChannelCard({ channel }: { channel: Channel }) {
       </div>
 
       <div className="flex items-center justify-between mt-3">
-        <span className={`text-xs flex items-center gap-1 ${hasNoFeedback ? "text-amber-400" : "text-emerald-400"}`}>
-          {hasNoFeedback ? "⚠️ Sem feedback" : "✅ Com feedback"}
+        <span className={`text-xs flex items-center gap-1.5 ${hasNoFeedback ? "text-amber-400" : "text-emerald-400"}`}>
+          {hasNoFeedback ? (
+            "⚠️ Sem feedback"
+          ) : (
+            <>
+              ✅ Com feedback
+              <span className="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold">
+                {feedbackCount}
+              </span>
+            </>
+          )}
         </span>
         {channel.lastSync && (
           <p className="text-xs text-gray-600">
